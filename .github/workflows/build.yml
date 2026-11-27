@@ -1,0 +1,2294 @@
+
+
+name: Compilar Mod Jerry Horror 1.20.1
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar Python Pillow para gerar texturas HD
+        run: pip install pillow
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Configurar Gradle 8.3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.3'
+
+      - name: Gerar todo o projeto do Mod e Texturas HD
+        run: |
+          mkdir -p src/main/java/com/jerryhorror/mod/init
+          mkdir -p src/main/java/com/jerryhorror/mod/block
+          mkdir -p src/main/java/com/jerryhorror/mod/entity
+          mkdir -p src/main/java/com/jerryhorror/mod/world
+          mkdir -p src/main/java/com/jerryhorror/mod/story
+          mkdir -p src/main/java/com/jerryhorror/mod/client/model
+          mkdir -p src/main/java/com/jerryhorror/mod/client/renderer
+          mkdir -p src/main/resources/META-INF
+          mkdir -p src/main/resources/assets/jerryhorrormod/blockstates
+          mkdir -p src/main/resources/assets/jerryhorrormod/models/block
+          mkdir -p src/main/resources/assets/jerryhorrormod/models/item
+          mkdir -p src/main/resources/assets/jerryhorrormod/textures/entity
+          mkdir -p src/main/resources/assets/jerryhorrormod/textures/block
+          mkdir -p src/main/resources/assets/jerryhorrormod/lang
+
+          cat << 'EOF' > settings.gradle
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  maven {
+                      name = 'MinecraftForge'
+                      url = 'https://maven.minecraftforge.net/'
+                  }
+              }
+          }
+          plugins {
+              id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+          }
+          rootProject.name = 'jerryhorrormod'
+          EOF
+
+          cat << 'EOF' > gradle.properties
+          org.gradle.jvmargs=-Xmx3G
+          org.gradle.daemon=false
+          EOF
+
+          cat << 'EOF' > build.gradle
+          plugins {
+              id 'java'
+              id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+          }
+          version = '1.0.0'
+          group = 'com.jerryhorror.mod'
+          base {
+              archivesName = 'jerryhorrormod'
+          }
+          java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+          minecraft {
+              mappings channel: 'official', version: '1.20.1'
+          }
+          dependencies {
+              minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
+          }
+          jar {
+              manifest {
+                  attributes([
+                      "Specification-Title": "jerryhorrormod",
+                      "Specification-Vendor": "JerryHorror",
+                      "Specification-Version": "1",
+                      "Implementation-Title": project.name,
+                      "Implementation-Version": project.jar.archiveVersion,
+                      "Implementation-Vendor": "JerryHorror"
+                  ])
+              }
+              finalizedBy 'reobfJar'
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/pack.mcmeta
+          {
+            "pack": {
+              "description": "Jerry Horror Mod Resources",
+              "pack_format": 15
+            }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/META-INF/mods.toml
+          modLoader="javafml"
+          loaderVersion="[47,)"
+          license="MIT"
+
+          [[mods]]
+          modId="jerryhorrormod"
+          version="1.0.0"
+          displayName="Jerry Horror Mod"
+          description='''Recria todos os acontecimentos do video do Jerry e Tom no Minecraft 1.20.1 Forge.'''
+
+          [[dependencies.jerryhorrormod]]
+              modId="forge"
+              mandatory=true
+              versionRange="[47,)"
+              ordering="NONE"
+              side="BOTH"
+
+          [[dependencies.jerryhorrormod]]
+              modId="minecraft"
+              mandatory=true
+              versionRange="[1.20.1,1.21)"
+              ordering="NONE"
+              side="BOTH"
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/lang/en_us.json
+          {
+            "entity.jerryhorrormod.jerry": "Jerry",
+            "entity.jerryhorrormod.tom": "Tom",
+            "entity.jerryhorrormod.dead_tom": "Tom",
+            "entity.jerryhorrormod.shadow_demon": "Unknown Entity",
+            "block.jerryhorrormod.blood_puddle": "Blood Puddle",
+            "block.jerryhorrormod.ritual_floor": "Ritual Floor",
+            "item.jerryhorrormod.jerry_spawn_egg": "Jerry Spawn Egg",
+            "item.jerryhorrormod.tom_spawn_egg": "Tom Spawn Egg",
+            "item.jerryhorrormod.dead_tom_spawn_egg": "Dead Tom Spawn Egg",
+            "item.jerryhorrormod.shadow_demon_spawn_egg": "Shadow Entity Spawn Egg"
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/lang/pt_br.json
+          {
+            "entity.jerryhorrormod.jerry": "Jerry",
+            "entity.jerryhorrormod.tom": "Tom",
+            "entity.jerryhorrormod.dead_tom": "Tom",
+            "entity.jerryhorrormod.shadow_demon": "Entidade Sombria",
+            "block.jerryhorrormod.blood_puddle": "Poca de Sangue",
+            "block.jerryhorrormod.ritual_floor": "Chao de Ritual",
+            "item.jerryhorrormod.jerry_spawn_egg": "Ovo de Jerry",
+            "item.jerryhorrormod.tom_spawn_egg": "Ovo de Tom",
+            "item.jerryhorrormod.dead_tom_spawn_egg": "Ovo de Tom Morto",
+            "item.jerryhorrormod.shadow_demon_spawn_egg": "Ovo de Entidade Sombria"
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/blockstates/blood_puddle.json
+          {
+            "variants": {
+              "": { "model": "jerryhorrormod:block/blood_puddle" }
+            }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/blockstates/ritual_floor.json
+          {
+            "variants": {
+              "": { "model": "jerryhorrormod:block/ritual_floor" }
+            }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/models/block/blood_puddle.json
+          {
+            "render_type": "minecraft:cutout",
+            "textures": {
+              "particle": "jerryhorrormod:block/blood_puddle",
+              "blood": "jerryhorrormod:block/blood_puddle"
+            },
+            "elements": [
+              {
+                "from": [0, 0.25, 0],
+                "to": [16, 0.25, 16],
+                "faces": {
+                  "up": { "uv": [0, 0, 16, 16], "texture": "#blood" },
+                  "down": { "uv": [0, 0, 16, 16], "texture": "#blood" }
+                }
+              }
+            ]
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/models/block/ritual_floor.json
+          {
+            "parent": "minecraft:block/cube_all",
+            "textures": {
+              "all": "jerryhorrormod:block/ritual_floor"
+            }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/models/item/blood_puddle.json
+          {
+            "parent": "jerryhorrormod:block/blood_puddle"
+          }
+          EOF
+
+          cat << 'EOF' > src/main/resources/assets/jerryhorrormod/models/item/ritual_floor.json
+          {
+            "parent": "jerryhorrormod:block/ritual_floor"
+          }
+          EOF
+
+          for egg in jerry_spawn_egg tom_spawn_egg dead_tom_spawn_egg shadow_demon_spawn_egg; do
+            cat << 'EOF' > src/main/resources/assets/jerryhorrormod/models/item/${egg}.json
+          {
+            "parent": "item/template_spawn_egg"
+          }
+          EOF
+          done
+
+          cat << 'EOF' > generate_textures.py
+          import random, math
+          from PIL import Image, ImageDraw
+
+          random.seed(42)
+
+          def make_wolf_base(collar_rgb=(204, 17, 17), bloody=False):
+              img = Image.new("RGBA", (256, 128), (218, 215, 210, 255))
+              px = img.load()
+              for y in range(128):
+                  for x in range(256):
+                      n = random.randint(-12, 12)
+                      r = max(0, min(255, 216 + n))
+                      g = max(0, min(255, 213 + n))
+                      b = max(0, min(255, 208 + n))
+                      px[x, y] = (r, g, b, 255)
+              d = ImageDraw.Draw(img)
+              # Snout (texOffs 0,10, size 3x3x4 -> 4x HD: x 0..56, y 40..68)
+              d.rectangle([0, 40, 56, 68], fill=(176, 152, 128, 255))
+              # Nose tip front (x 16..28, y 56..68)
+              d.rectangle([16, 56, 28, 68], fill=(165, 140, 118, 255))
+              d.rectangle([19, 57, 25, 62], fill=(20, 18, 18, 255))
+              d.rectangle([16, 64, 28, 66], fill=(45, 38, 35, 255))
+              # Ears (texOffs 16,14 -> x 64..88, y 56..68)
+              d.rectangle([64, 56, 88, 68], fill=(155, 148, 140, 255))
+              d.rectangle([68, 60, 74, 67], fill=(95, 88, 82, 255))
+              # Collar (texOffs 42,0, size 8x6x2 -> 4x HD: x 168..248, y 0..32)
+              d.rectangle([168, 0, 255, 36], fill=(collar_rgb[0], collar_rgb[1], collar_rgb[2], 255))
+              for cx in range(168, 255, 4):
+                  d.line([(cx, 0), (cx, 36)], fill=(max(0, collar_rgb[0]-20), max(0, collar_rgb[1]-10), max(0, collar_rgb[2]-10), 255))
+              # Mane shading
+              for y in range(0, 52):
+                  for x in range(84, 168):
+                      r, g, b, a = px[x, y]
+                      px[x, y] = (max(0, r-18), max(0, g-18), max(0, b-18), 255)
+              if bloody:
+                  for _ in range(95):
+                      bx = random.randint(0, 255)
+                      by = random.randint(0, 127)
+                      if 168 <= bx <= 255 and 0 <= by <= 36:
+                          continue
+                      br = random.randint(3, 14)
+                      col = (random.randint(95, 165), random.randint(0, 12), random.randint(0, 12), 255)
+                      d.ellipse([bx-br, by-br, bx+br, by+br], fill=col)
+                  for _ in range(35):
+                      bx = random.randint(0, 255)
+                      by = random.randint(0, 120)
+                      if 168 <= bx <= 255 and 0 <= by <= 36:
+                          continue
+                      d.line([(bx, by), (bx+random.randint(-8, 8), by+random.randint(6, 22))], fill=(120, 0, 0, 255), width=2)
+              return img
+
+          def draw_normal_eyes(img):
+              d = ImageDraw.Draw(img)
+              # Face front: x 16..40, y 16..40
+              d.rectangle([18, 26, 22, 30], fill=(255, 255, 255, 255))
+              d.rectangle([20, 26, 23, 30], fill=(15, 15, 15, 255))
+              d.rectangle([34, 26, 38, 30], fill=(255, 255, 255, 255))
+              d.rectangle([33, 26, 36, 30], fill=(15, 15, 15, 255))
+              return img
+
+          def draw_happy_eyes(img):
+              d = ImageDraw.Draw(img)
+              d.arc([17, 25, 24, 33], start=190, end=350, fill=(15, 15, 15, 255), width=2)
+              d.arc([32, 25, 39, 33], start=190, end=350, fill=(15, 15, 15, 255), width=2)
+              d.ellipse([16, 31, 20, 34], fill=(240, 165, 175, 255))
+              d.ellipse([36, 31, 40, 34], fill=(240, 165, 175, 255))
+              return img
+
+          def draw_creepy_eyes(img):
+              d = ImageDraw.Draw(img)
+              # Wide photorealistic staring eyes like 03:16
+              for cx in (21, 35):
+                  d.ellipse([cx-5, 22, cx+5, 32], fill=(65, 58, 55, 255))
+                  d.ellipse([cx-4, 23, cx+4, 31], fill=(248, 248, 245, 255))
+                  d.ellipse([cx-2, 25, cx+2, 29], fill=(10, 10, 10, 255))
+                  d.point((cx-1, 25), fill=(255, 255, 255, 255))
+                  d.arc([cx-5, 21, cx+5, 29], start=190, end=350, fill=(35, 28, 25, 255), width=1)
+              return img
+
+          def draw_sad_eyes(img):
+              d = ImageDraw.Draw(img)
+              for cx in (21, 35):
+                  d.ellipse([cx-4, 25, cx+4, 32], fill=(25, 22, 22, 255))
+                  d.ellipse([cx-2, 26, cx+1, 29], fill=(255, 255, 255, 255))
+                  d.rectangle([cx-1, 31, cx+2, 33], fill=(165, 220, 255, 255))
+              d.line([(17, 25), (24, 22)], fill=(70, 62, 58, 255), width=2)
+              d.line([(39, 25), (32, 22)], fill=(70, 62, 58, 255), width=2)
+              return img
+
+          def draw_smile_face(img):
+              draw_creepy_eyes(img)
+              d = ImageDraw.Draw(img)
+              # Creepy wide grin across lower face and snout like 16:52
+              d.arc([16, 29, 40, 39], start=10, end=170, fill=(10, 5, 5, 255), width=3)
+              for tx in range(19, 38, 3):
+                  d.line([(tx, 34), (tx, 37)], fill=(245, 245, 235, 255), width=1)
+              # Grin on snout front too
+              d.rectangle([16, 62, 28, 67], fill=(15, 8, 8, 255))
+              for tx in range(17, 28, 2):
+                  d.rectangle([tx, 63, tx, 66], fill=(245, 245, 235, 255))
+              return img
+
+          out_e = "src/main/resources/assets/jerryhorrormod/textures/entity"
+          out_b = "src/main/resources/assets/jerryhorrormod/textures/block"
+
+          draw_normal_eyes(make_wolf_base((204, 17, 17))).save(f"{out_e}/jerry_normal.png")
+          draw_happy_eyes(make_wolf_base((204, 17, 17))).save(f"{out_e}/jerry_happy.png")
+          draw_creepy_eyes(make_wolf_base((204, 17, 17))).save(f"{out_e}/jerry_creepy.png")
+          draw_sad_eyes(make_wolf_base((204, 17, 17))).save(f"{out_e}/jerry_sad.png")
+          draw_smile_face(make_wolf_base((204, 17, 17))).save(f"{out_e}/jerry_smile.png")
+          draw_normal_eyes(make_wolf_base((30, 85, 204))).save(f"{out_e}/tom_normal.png")
+
+          dead_tom = make_wolf_base((30, 85, 204), bloody=True)
+          dt = ImageDraw.Draw(dead_tom)
+          dt.ellipse([18, 25, 24, 31], fill=(35, 5, 5, 255))
+          dt.point((20, 27), fill=(180, 160, 160, 255))
+          dt.ellipse([32, 25, 38, 31], fill=(35, 5, 5, 255))
+          dead_tom.save(f"{out_e}/dead_tom.png")
+
+          # Shadow Demon (64x64)
+          sh = Image.new("RGBA", (64, 64), (7, 3, 5, 255))
+          sd = ImageDraw.Draw(sh)
+          for _ in range(120):
+              sx, sy = random.randint(0, 63), random.randint(0, 63)
+              sd.point((sx, sy), fill=(random.randint(15, 45), 0, 2, 255))
+          # Glowing faint red eyes on head front (8..16, 8..16)
+          sd.rectangle([9, 11, 11, 12], fill=(220, 15, 15, 255))
+          sd.rectangle([13, 11, 15, 12], fill=(220, 15, 15, 255))
+          sh.save(f"{out_e}/shadow_demon.png")
+
+          # Speaker Icon (64x64 transparent)
+          sp = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+          spd = ImageDraw.Draw(sp)
+          spd.rectangle([10, 23, 22, 41], fill=(10, 10, 10, 255))
+          spd.polygon([(22, 23), (38, 10), (38, 54), (22, 41)], fill=(10, 10, 10, 255))
+          spd.arc([34, 18, 50, 46], start=300, end=60, fill=(10, 10, 10, 255), width=4)
+          spd.arc([38, 10, 60, 54], start=300, end=60, fill=(10, 10, 10, 255), width=4)
+          sp.save(f"{out_e}/speaker_icon.png")
+
+          # Blood Puddle (64x64 transparent)
+          bp = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+          bpd = ImageDraw.Draw(bp)
+          bpd.ellipse([14, 16, 50, 48], fill=(165, 5, 5, 240))
+          bpd.ellipse([20, 22, 44, 42], fill=(115, 0, 0, 250))
+          for ang in range(0, 360, 22):
+              rad = math.radians(ang + random.randint(-8, 8))
+              dist = random.randint(18, 30)
+              ex = int(32 + math.cos(rad) * dist)
+              ey = int(32 + math.sin(rad) * dist)
+              bpd.line([(32, 32), (ex, ey)], fill=(175, 8, 8, 235), width=random.randint(2, 4))
+              bpd.ellipse([ex-3, ey-3, ex+3, ey+3], fill=(185, 10, 10, 230))
+          bp.save(f"{out_b}/blood_puddle.png")
+
+          # Ritual Floor (64x64 glowing crimson with dark occult runes like 15:57)
+          rf = Image.new("RGBA", (64, 64), (205, 12, 12, 255))
+          rfd = ImageDraw.Draw(rf)
+          rfd.rectangle([2, 2, 61, 61], outline=(25, 0, 0, 255), width=4)
+          rfd.rectangle([12, 12, 51, 51], outline=(35, 0, 0, 255), width=3)
+          rfd.ellipse([18, 18, 45, 45], outline=(20, 0, 0, 255), width=3)
+          rfd.line([(0, 32), (63, 32)], fill=(30, 0, 0, 255), width=2)
+          rfd.line([(32, 0), (32, 63)], fill=(30, 0, 0, 255), width=2)
+          rfd.rectangle([26, 26, 37, 37], fill=(245, 30, 20, 255), outline=(15, 0, 0, 255), width=2)
+          rf.save(f"{out_b}/ritual_floor.png")
+          print("Todas as texturas HD foram geradas com sucesso!")
+          EOF
+
+          python3 generate_textures.py
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/JerryHorrorMod.java
+          package com.jerryhorror.mod;
+
+          import com.jerryhorror.mod.entity.DeadTomEntity;
+          import com.jerryhorror.mod.entity.JerryEntity;
+          import com.jerryhorror.mod.entity.ShadowDemonEntity;
+          import com.jerryhorror.mod.entity.TomEntity;
+          import com.jerryhorror.mod.init.ModBlocks;
+          import com.jerryhorror.mod.init.ModEntities;
+          import com.jerryhorror.mod.init.ModItems;
+          import com.jerryhorror.mod.story.StoryManager;
+          import net.minecraft.world.item.CreativeModeTabs;
+          import net.minecraftforge.common.MinecraftForge;
+          import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+          import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
+          import net.minecraftforge.eventbus.api.IEventBus;
+          import net.minecraftforge.fml.common.Mod;
+          import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+
+          @Mod(JerryHorrorMod.MODID)
+          public class JerryHorrorMod {
+              public static final String MODID = "jerryhorrormod";
+
+              public JerryHorrorMod() {
+                  IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+                  ModBlocks.BLOCKS.register(modEventBus);
+                  ModItems.ITEMS.register(modEventBus);
+                  ModEntities.ENTITIES.register(modEventBus);
+                  modEventBus.addListener(this::registerAttributes);
+                  modEventBus.addListener(this::addCreative);
+                  MinecraftForge.EVENT_BUS.register(new StoryManager());
+              }
+
+              private void registerAttributes(EntityAttributeCreationEvent event) {
+                  event.put(ModEntities.JERRY.get(), JerryEntity.createAttributes().build());
+                  event.put(ModEntities.TOM.get(), TomEntity.createAttributes().build());
+                  event.put(ModEntities.DEAD_TOM.get(), DeadTomEntity.createAttributes().build());
+                  event.put(ModEntities.SHADOW_DEMON.get(), ShadowDemonEntity.createAttributes().build());
+              }
+
+              private void addCreative(BuildCreativeModeTabContentsEvent event) {
+                  if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
+                      event.accept(ModItems.JERRY_SPAWN_EGG);
+                      event.accept(ModItems.TOM_SPAWN_EGG);
+                      event.accept(ModItems.DEAD_TOM_SPAWN_EGG);
+                      event.accept(ModItems.SHADOW_DEMON_SPAWN_EGG);
+                  }
+                  if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+                      event.accept(ModItems.BLOOD_PUDDLE_ITEM);
+                      event.accept(ModItems.RITUAL_FLOOR_ITEM);
+                  }
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/block/BloodPuddleBlock.java
+          package com.jerryhorror.mod.block;
+
+          import net.minecraft.core.BlockPos;
+          import net.minecraft.world.level.BlockGetter;
+          import net.minecraft.world.level.block.Block;
+          import net.minecraft.world.level.block.state.BlockState;
+          import net.minecraft.world.phys.shapes.CollisionContext;
+          import net.minecraft.world.phys.shapes.VoxelShape;
+
+          public class BloodPuddleBlock extends Block {
+              private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 1.0D, 16.0D);
+
+              public BloodPuddleBlock(Properties props) {
+                  super(props);
+              }
+
+              @Override
+              public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+                  return SHAPE;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/init/ModBlocks.java
+          package com.jerryhorror.mod.init;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.block.BloodPuddleBlock;
+          import net.minecraft.world.level.block.Block;
+          import net.minecraft.world.level.block.SoundType;
+          import net.minecraft.world.level.block.state.BlockBehaviour;
+          import net.minecraft.world.level.material.MapColor;
+          import net.minecraftforge.registries.DeferredRegister;
+          import net.minecraftforge.registries.ForgeRegistries;
+          import net.minecraftforge.registries.RegistryObject;
+
+          public class ModBlocks {
+              public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, JerryHorrorMod.MODID);
+
+              public static final RegistryObject<Block> BLOOD_PUDDLE = BLOCKS.register("blood_puddle",
+                      () -> new BloodPuddleBlock(BlockBehaviour.Properties.of()
+                              .mapColor(MapColor.COLOR_RED)
+                              .noCollission()
+                              .noOcclusion()
+                              .instabreak()
+                              .sound(SoundType.SLIME_BLOCK)));
+
+              public static final RegistryObject<Block> RITUAL_FLOOR = BLOCKS.register("ritual_floor",
+                      () -> new Block(BlockBehaviour.Properties.of()
+                              .mapColor(MapColor.NETHER)
+                              .strength(3.0F)
+                              .lightLevel(s -> 12)
+                              .sound(SoundType.STONE)));
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/init/ModEntities.java
+          package com.jerryhorror.mod.init;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.entity.DeadTomEntity;
+          import com.jerryhorror.mod.entity.JerryEntity;
+          import com.jerryhorror.mod.entity.ShadowDemonEntity;
+          import com.jerryhorror.mod.entity.TomEntity;
+          import net.minecraft.world.entity.EntityType;
+          import net.minecraft.world.entity.MobCategory;
+          import net.minecraftforge.registries.DeferredRegister;
+          import net.minecraftforge.registries.ForgeRegistries;
+          import net.minecraftforge.registries.RegistryObject;
+
+          public class ModEntities {
+              public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, JerryHorrorMod.MODID);
+
+              public static final RegistryObject<EntityType<JerryEntity>> JERRY = ENTITIES.register("jerry",
+                      () -> EntityType.Builder.of(JerryEntity::new, MobCategory.CREATURE).sized(0.6F, 0.85F).build("jerry"));
+
+              public static final RegistryObject<EntityType<TomEntity>> TOM = ENTITIES.register("tom",
+                      () -> EntityType.Builder.of(TomEntity::new, MobCategory.CREATURE).sized(0.6F, 0.85F).build("tom"));
+
+              public static final RegistryObject<EntityType<DeadTomEntity>> DEAD_TOM = ENTITIES.register("dead_tom",
+                      () -> EntityType.Builder.of(DeadTomEntity::new, MobCategory.MISC).sized(1.1F, 0.35F).build("dead_tom"));
+
+              public static final RegistryObject<EntityType<ShadowDemonEntity>> SHADOW_DEMON = ENTITIES.register("shadow_demon",
+                      () -> EntityType.Builder.of(ShadowDemonEntity::new, MobCategory.MONSTER).sized(0.7F, 2.4F).build("shadow_demon"));
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/init/ModItems.java
+          package com.jerryhorror.mod.init;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import net.minecraft.world.item.BlockItem;
+          import net.minecraft.world.item.Item;
+          import net.minecraftforge.common.ForgeSpawnEggItem;
+          import net.minecraftforge.registries.DeferredRegister;
+          import net.minecraftforge.registries.ForgeRegistries;
+          import net.minecraftforge.registries.RegistryObject;
+
+          public class ModItems {
+              public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, JerryHorrorMod.MODID);
+
+              public static final RegistryObject<Item> BLOOD_PUDDLE_ITEM = ITEMS.register("blood_puddle",
+                      () -> new BlockItem(ModBlocks.BLOOD_PUDDLE.get(), new Item.Properties()));
+
+              public static final RegistryObject<Item> RITUAL_FLOOR_ITEM = ITEMS.register("ritual_floor",
+                      () -> new BlockItem(ModBlocks.RITUAL_FLOOR.get(), new Item.Properties()));
+
+              public static final RegistryObject<Item> JERRY_SPAWN_EGG = ITEMS.register("jerry_spawn_egg",
+                      () -> new ForgeSpawnEggItem(ModEntities.JERRY, 0xDCDCDC, 0xCC1111, new Item.Properties()));
+
+              public static final RegistryObject<Item> TOM_SPAWN_EGG = ITEMS.register("tom_spawn_egg",
+                      () -> new ForgeSpawnEggItem(ModEntities.TOM, 0xDCDCDC, 0x1E55CC, new Item.Properties()));
+
+              public static final RegistryObject<Item> DEAD_TOM_SPAWN_EGG = ITEMS.register("dead_tom_spawn_egg",
+                      () -> new ForgeSpawnEggItem(ModEntities.DEAD_TOM, 0x7A0000, 0x1E55CC, new Item.Properties()));
+
+              public static final RegistryObject<Item> SHADOW_DEMON_SPAWN_EGG = ITEMS.register("shadow_demon_spawn_egg",
+                      () -> new ForgeSpawnEggItem(ModEntities.SHADOW_DEMON, 0x050505, 0x990000, new Item.Properties()));
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/entity/JerryEntity.java
+          package com.jerryhorror.mod.entity;
+
+          import com.jerryhorror.mod.story.StoryManager;
+          import net.minecraft.core.particles.DustParticleOptions;
+          import net.minecraft.core.particles.ParticleTypes;
+          import net.minecraft.nbt.CompoundTag;
+          import net.minecraft.network.chat.Component;
+          import net.minecraft.network.syncher.EntityDataAccessor;
+          import net.minecraft.network.syncher.EntityDataSerializers;
+          import net.minecraft.network.syncher.SynchedEntityData;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.server.level.ServerPlayer;
+          import net.minecraft.sounds.SoundEvents;
+          import net.minecraft.world.InteractionHand;
+          import net.minecraft.world.InteractionResult;
+          import net.minecraft.world.damagesource.DamageSource;
+          import net.minecraft.world.entity.EntityType;
+          import net.minecraft.world.entity.Mob;
+          import net.minecraft.world.entity.PathfinderMob;
+          import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+          import net.minecraft.world.entity.ai.attributes.Attributes;
+          import net.minecraft.world.entity.ai.goal.FloatGoal;
+          import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+          import net.minecraft.world.entity.player.Player;
+          import net.minecraft.world.item.ItemStack;
+          import net.minecraft.world.item.Items;
+          import net.minecraft.world.level.Level;
+          import net.minecraft.world.phys.Vec3;
+          import org.joml.Vector3f;
+
+          public class JerryEntity extends PathfinderMob {
+              public static final int FACE_NORMAL = 0;
+              public static final int FACE_HAPPY = 1;
+              public static final int FACE_CREEPY = 2;
+              public static final int FACE_SAD = 3;
+              public static final int FACE_SMILE = 4;
+
+              public static final int ANIM_NORMAL = 0;
+              public static final int ANIM_ROLL_OVER = 1;
+              public static final int ANIM_SLEEP_BED = 2;
+              public static final int ANIM_MARK_TERRITORY = 3;
+              public static final int ANIM_DIG_CHEST = 4;
+              public static final int ANIM_HUMAN_SIT = 5;
+              public static final int ANIM_STAND_UPRIGHT = 6;
+              public static final int ANIM_THE_END = 7;
+
+              private static final EntityDataAccessor<Integer> DATA_FACE = SynchedEntityData.defineId(JerryEntity.class, EntityDataSerializers.INT);
+              private static final EntityDataAccessor<Integer> DATA_ANIM = SynchedEntityData.defineId(JerryEntity.class, EntityDataSerializers.INT);
+              private static final EntityDataAccessor<Integer> DATA_SPEAKER = SynchedEntityData.defineId(JerryEntity.class, EntityDataSerializers.INT);
+              private static final EntityDataAccessor<Boolean> DATA_SITTING = SynchedEntityData.defineId(JerryEntity.class, EntityDataSerializers.BOOLEAN);
+
+              private int animTimer = 0;
+              private int endStareTimer = 0;
+              private int pushCooldown = 0;
+
+              public JerryEntity(EntityType<? extends PathfinderMob> type, Level level) {
+                  super(type, level);
+                  this.setCustomName(Component.literal("Jerry"));
+                  this.setCustomNameVisible(true);
+                  this.setPersistenceRequired();
+              }
+
+              public static AttributeSupplier.Builder createAttributes() {
+                  return Mob.createMobAttributes()
+                          .add(Attributes.MAX_HEALTH, 200.0D)
+                          .add(Attributes.MOVEMENT_SPEED, 0.34D)
+                          .add(Attributes.ATTACK_DAMAGE, 4.0D);
+              }
+
+              @Override
+              protected void defineSynchedData() {
+                  super.defineSynchedData();
+                  this.entityData.define(DATA_FACE, FACE_NORMAL);
+                  this.entityData.define(DATA_ANIM, ANIM_NORMAL);
+                  this.entityData.define(DATA_SPEAKER, 0);
+                  this.entityData.define(DATA_SITTING, false);
+              }
+
+              @Override
+              protected void registerGoals() {
+                  this.goalSelector.addGoal(0, new FloatGoal(this));
+                  this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 24.0F));
+              }
+
+              public int getFaceState() { return this.entityData.get(DATA_FACE); }
+              public void setFaceState(int face) { this.entityData.set(DATA_FACE, face); }
+
+              public int getAnimState() { return this.entityData.get(DATA_ANIM); }
+              public void setAnimState(int anim) { this.entityData.set(DATA_ANIM, anim); }
+
+              public int getSpeakerTimer() { return this.entityData.get(DATA_SPEAKER); }
+              public void setSpeakerTimer(int t) { this.entityData.set(DATA_SPEAKER, t); }
+
+              public boolean isJerrySitting() { return this.entityData.get(DATA_SITTING); }
+              public void setJerrySitting(boolean sit) { this.entityData.set(DATA_SITTING, sit); }
+
+              public void triggerRollOver(boolean happy) {
+                  this.setAnimState(ANIM_ROLL_OVER);
+                  if (happy) this.setFaceState(FACE_HAPPY);
+                  this.animTimer = 50;
+                  this.playSound(SoundEvents.WOLF_AMBIENT, 1.0F, 1.2F);
+              }
+
+              @Override
+              public void tick() {
+                  super.tick();
+                  if (!this.level().isClientSide) {
+                      if (getSpeakerTimer() > 0) setSpeakerTimer(getSpeakerTimer() - 1);
+                      if (pushCooldown > 0) pushCooldown--;
+
+                      int anim = getAnimState();
+                      if (animTimer > 0) {
+                          animTimer--;
+                          if (animTimer == 0 && anim == ANIM_ROLL_OVER) {
+                              setAnimState(ANIM_NORMAL);
+                              if (StoryManager.currentPhase <= 1) setFaceState(FACE_NORMAL);
+                          }
+                      }
+
+                      if (anim == ANIM_MARK_TERRITORY && this.tickCount % 3 == 0 && this.level() instanceof ServerLevel sl) {
+                          sl.sendParticles(new DustParticleOptions(new Vector3f(0.75F, 0.55F, 0.12F), 1.3F),
+                                  getX(), getY() + 0.25D, getZ(), 6, 0.25D, 0.1D, 0.25D, 0.02D);
+                      }
+
+                      Player nearest = this.level().getNearestPlayer(this, 24.0D);
+                      if (nearest != null) {
+                          // Seguir o jogador apenas na Fase 1 (quando nao esta sentado/fazendo truque)
+                          if (StoryManager.currentPhase <= 1 && !isJerrySitting() && anim == ANIM_NORMAL) {
+                              if (this.distanceTo(nearest) > 4.5D) {
+                                  this.getNavigation().moveTo(nearest, 1.15D);
+                              }
+                          }
+
+                          // Fase 3: Empurrar o jogador na beira de penhasco/caverna
+                          if (StoryManager.currentPhase == 3 && pushCooldown == 0 && this.distanceTo(nearest) < 2.6D) {
+                              Vec3 push = nearest.position().subtract(this.position()).normalize().scale(1.35D);
+                              nearest.setDeltaMovement(push.x, 0.42D, push.z);
+                              nearest.hurtMarked = true;
+                              this.playSound(SoundEvents.WOLF_GROWL, 1.2F, 0.7F);
+                              if (nearest instanceof ServerPlayer sp) {
+                                  sp.displayClientMessage(Component.literal("§cVoce escorregou...!"), true);
+                              }
+                              pushCooldown = 140;
+                          }
+
+                          // Fase 11: Quando Jerry fica em pe na cama encarando o jogador -> THE END...?
+                          if (anim == ANIM_STAND_UPRIGHT) {
+                              this.getLookControl().setLookAt(nearest, 30.0F, 30.0F);
+                              this.setDeltaMovement(Vec3.ZERO);
+                              if (this.distanceTo(nearest) < 10.0D) {
+                                  endStareTimer++;
+                                  if (endStareTimer == 1) {
+                                      this.playSound(SoundEvents.AMBIENT_CAVE.value(), 2.0F, 0.5F);
+                                  }
+                                  if (endStareTimer >= 65) {
+                                      setAnimState(ANIM_THE_END);
+                                      this.playSound(SoundEvents.WARDEN_SONIC_BOOM, 1.5F, 0.4F);
+                                  }
+                              }
+                          }
+
+                          // Travar movimento nas poses cinematograficas
+                          if (anim == ANIM_SLEEP_BED || anim == ANIM_HUMAN_SIT || anim == ANIM_DIG_CHEST || anim == ANIM_THE_END) {
+                              this.getNavigation().stop();
+                              this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
+                          }
+                      }
+                  }
+              }
+
+              @Override
+              public InteractionResult mobInteract(Player player, InteractionHand hand) {
+                  if (!this.level().isClientSide && hand == InteractionHand.MAIN_HAND) {
+                      ItemStack stack = player.getItemInHand(hand);
+                      if (stack.is(Items.BONE)) {
+                          if (StoryManager.currentPhase == 3) {
+                              // Jerry esmaga o osso agressivamente como em 05:10
+                              stack.shrink(1);
+                              this.playSound(SoundEvents.SKELETON_HURT, 1.2F, 0.6F);
+                              if (this.level() instanceof ServerLevel sl) {
+                                  sl.sendParticles(ParticleTypes.POOF, getX(), getY() + 0.5D, getZ(), 20, 0.3D, 0.2D, 0.3D, 0.08D);
+                              }
+                              player.sendSystemMessage(Component.literal("§7Jerry esmagou o osso em pedacos e continuou te encarando..."));
+                              return InteractionResult.SUCCESS;
+                          } else {
+                              stack.shrink(1);
+                              this.playSound(SoundEvents.GENERIC_EAT, 1.0F, 1.1F);
+                              if (StoryManager.currentPhase <= 1) setFaceState(FACE_HAPPY);
+                              if (this.level() instanceof ServerLevel sl) {
+                                  sl.sendParticles(ParticleTypes.HEART, getX(), getY() + 0.8D, getZ(), 6, 0.3D, 0.3D, 0.3D, 0.02D);
+                              }
+                              return InteractionResult.SUCCESS;
+                          }
+                      }
+
+                      if (StoryManager.currentPhase == 4 && getAnimState() == ANIM_SLEEP_BED) {
+                          setAnimState(ANIM_MARK_TERRITORY);
+                          this.playSound(SoundEvents.WOLF_GROWL, 1.0F, 0.7F);
+                          player.sendSystemMessage(Component.literal("§eJerry nao quer sair da sua cama... Ele esta marcando territorio."));
+                          return InteractionResult.SUCCESS;
+                      }
+
+                      if (StoryManager.currentPhase == 7 && getAnimState() == ANIM_SLEEP_BED) {
+                          setAnimState(ANIM_NORMAL);
+                          setFaceState(FACE_SAD);
+                          this.playSound(SoundEvents.WOLF_WHINE, 1.0F, 0.9F);
+                          player.sendSystemMessage(Component.literal("§bJerry acordou e parece 'triste' pelo Tom... Use uma pa no corpo do Tom para enterra-lo."));
+                          return InteractionResult.SUCCESS;
+                      }
+
+                      if (StoryManager.currentPhase <= 1) {
+                          setJerrySitting(!isJerrySitting());
+                          return InteractionResult.SUCCESS;
+                      }
+                  }
+                  return super.mobInteract(player, hand);
+              }
+
+              @Override
+              public boolean hurt(DamageSource source, float amount) {
+                  if (StoryManager.currentPhase >= 2) {
+                      this.playSound(SoundEvents.WOLF_GROWL, 1.2F, 0.5F);
+                      return false;
+                  }
+                  return super.hurt(source, amount);
+              }
+
+              @Override
+              public void addAdditionalSaveData(CompoundTag tag) {
+                  super.addAdditionalSaveData(tag);
+                  tag.putInt("JerryFace", getFaceState());
+                  tag.putInt("JerryAnim", getAnimState());
+                  tag.putBoolean("JerrySit", isJerrySitting());
+              }
+
+              @Override
+              public void readAdditionalSaveData(CompoundTag tag) {
+                  super.readAdditionalSaveData(tag);
+                  if (tag.contains("JerryFace")) setFaceState(tag.getInt("JerryFace"));
+                  if (tag.contains("JerryAnim")) setAnimState(tag.getInt("JerryAnim"));
+                  if (tag.contains("JerrySit")) setJerrySitting(tag.getBoolean("JerrySit"));
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/entity/TomEntity.java
+          package com.jerryhorror.mod.entity;
+
+          import net.minecraft.core.particles.ParticleTypes;
+          import net.minecraft.network.chat.Component;
+          import net.minecraft.network.syncher.EntityDataAccessor;
+          import net.minecraft.network.syncher.EntityDataSerializers;
+          import net.minecraft.network.syncher.SynchedEntityData;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.sounds.SoundEvents;
+          import net.minecraft.world.entity.EntityType;
+          import net.minecraft.world.entity.Mob;
+          import net.minecraft.world.entity.PathfinderMob;
+          import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+          import net.minecraft.world.entity.ai.attributes.Attributes;
+          import net.minecraft.world.entity.ai.goal.FloatGoal;
+          import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+          import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+          import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+          import net.minecraft.world.entity.animal.Sheep;
+          import net.minecraft.world.entity.player.Player;
+          import net.minecraft.world.level.Level;
+
+          public class TomEntity extends PathfinderMob {
+              private static final EntityDataAccessor<Boolean> DATA_HUGGING = SynchedEntityData.defineId(TomEntity.class, EntityDataSerializers.BOOLEAN);
+              private int hugTimer = 0;
+
+              public TomEntity(EntityType<? extends PathfinderMob> type, Level level) {
+                  super(type, level);
+                  this.setCustomName(Component.literal("Tom"));
+                  this.setCustomNameVisible(true);
+                  this.setPersistenceRequired();
+              }
+
+              public static AttributeSupplier.Builder createAttributes() {
+                  return Mob.createMobAttributes()
+                          .add(Attributes.MAX_HEALTH, 40.0D)
+                          .add(Attributes.MOVEMENT_SPEED, 0.36D)
+                          .add(Attributes.ATTACK_DAMAGE, 6.0D);
+              }
+
+              @Override
+              protected void defineSynchedData() {
+                  super.defineSynchedData();
+                  this.entityData.define(DATA_HUGGING, false);
+              }
+
+              @Override
+              protected void registerGoals() {
+                  this.goalSelector.addGoal(0, new FloatGoal(this));
+                  this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2D, true));
+                  this.goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 16.0F));
+                  this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Sheep.class, true));
+              }
+
+              public boolean isHugging() { return this.entityData.get(DATA_HUGGING); }
+
+              public void triggerHug(JerryEntity jerry) {
+                  this.getNavigation().moveTo(jerry, 1.2D);
+                  this.entityData.set(DATA_HUGGING, true);
+                  this.hugTimer = 70;
+                  this.playSound(SoundEvents.WOLF_AMBIENT, 1.0F, 1.4F);
+              }
+
+              @Override
+              public void tick() {
+                  super.tick();
+                  if (!this.level().isClientSide) {
+                      if (hugTimer > 0) {
+                          hugTimer--;
+                          if (hugTimer % 10 == 0 && this.level() instanceof ServerLevel sl) {
+                              sl.sendParticles(ParticleTypes.HEART, getX(), getY() + 0.9D, getZ(), 4, 0.3D, 0.3D, 0.3D, 0.02D);
+                          }
+                          if (hugTimer == 0) this.entityData.set(DATA_HUGGING, false);
+                      } else {
+                          Player p = this.level().getNearestPlayer(this, 24.0D);
+                          if (p != null && this.getTarget() == null && this.distanceTo(p) > 4.0D) {
+                              this.getNavigation().moveTo(p, 1.1D);
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/entity/DeadTomEntity.java
+          package com.jerryhorror.mod.entity;
+
+          import com.jerryhorror.mod.story.StoryManager;
+          import net.minecraft.core.particles.DustParticleOptions;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.server.level.ServerPlayer;
+          import net.minecraft.world.InteractionHand;
+          import net.minecraft.world.InteractionResult;
+          import net.minecraft.world.damagesource.DamageSource;
+          import net.minecraft.world.entity.EntityType;
+          import net.minecraft.world.entity.Mob;
+          import net.minecraft.world.entity.PathfinderMob;
+          import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+          import net.minecraft.world.entity.ai.attributes.Attributes;
+          import net.minecraft.world.entity.player.Player;
+          import net.minecraft.world.item.ShovelItem;
+          import net.minecraft.world.level.Level;
+          import net.minecraft.world.phys.Vec3;
+          import org.joml.Vector3f;
+
+          public class DeadTomEntity extends PathfinderMob {
+              public DeadTomEntity(EntityType<? extends PathfinderMob> type, Level level) {
+                  super(type, level);
+                  this.setPersistenceRequired();
+              }
+
+              public static AttributeSupplier.Builder createAttributes() {
+                  return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.MOVEMENT_SPEED, 0.0D);
+              }
+
+              @Override
+              public void tick() {
+                  super.tick();
+                  this.setDeltaMovement(Vec3.ZERO);
+                  if (!this.level().isClientSide && this.tickCount % 12 == 0 && this.level() instanceof ServerLevel sl) {
+                      sl.sendParticles(new DustParticleOptions(new Vector3f(0.7F, 0.0F, 0.0F), 1.0F),
+                              getX(), getY() + 0.2D, getZ(), 3, 0.4D, 0.05D, 0.4D, 0.0D);
+                  }
+              }
+
+              @Override
+              public InteractionResult mobInteract(Player player, InteractionHand hand) {
+                  if (!this.level().isClientSide && hand == InteractionHand.MAIN_HAND && player instanceof ServerPlayer sp) {
+                      if (player.getItemInHand(hand).getItem() instanceof ShovelItem) {
+                          if (StoryManager.currentPhase == 7) {
+                              StoryManager.buryTom((ServerLevel) this.level(), sp, this);
+                              return InteractionResult.SUCCESS;
+                          }
+                      }
+                  }
+                  return super.mobInteract(player, hand);
+              }
+
+              @Override
+              public boolean isPushable() { return false; }
+
+              @Override
+              public boolean hurt(DamageSource source, float amount) { return false; }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/entity/ShadowDemonEntity.java
+          package com.jerryhorror.mod.entity;
+
+          import net.minecraft.core.particles.DustParticleOptions;
+          import net.minecraft.core.particles.ParticleTypes;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.sounds.SoundEvents;
+          import net.minecraft.world.effect.MobEffectInstance;
+          import net.minecraft.world.effect.MobEffects;
+          import net.minecraft.world.entity.Entity;
+          import net.minecraft.world.entity.EntityType;
+          import net.minecraft.world.entity.LivingEntity;
+          import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+          import net.minecraft.world.entity.ai.attributes.Attributes;
+          import net.minecraft.world.entity.ai.goal.FloatGoal;
+          import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+          import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+          import net.minecraft.world.entity.monster.Monster;
+          import net.minecraft.world.entity.player.Player;
+          import net.minecraft.world.level.Level;
+          import org.joml.Vector3f;
+
+          public class ShadowDemonEntity extends Monster {
+              public ShadowDemonEntity(EntityType<? extends Monster> type, Level level) {
+                  super(type, level);
+                  this.setPersistenceRequired();
+              }
+
+              public static AttributeSupplier.Builder createAttributes() {
+                  return Monster.createMonsterAttributes()
+                          .add(Attributes.MAX_HEALTH, 100.0D)
+                          .add(Attributes.MOVEMENT_SPEED, 0.37D)
+                          .add(Attributes.ATTACK_DAMAGE, 5.0D)
+                          .add(Attributes.FOLLOW_RANGE, 48.0D);
+              }
+
+              @Override
+              protected void registerGoals() {
+                  this.goalSelector.addGoal(0, new FloatGoal(this));
+                  this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.25D, true));
+                  this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, false));
+              }
+
+              @Override
+              public void tick() {
+                  super.tick();
+                  if (!this.level().isClientSide && this.level() instanceof ServerLevel sl) {
+                      if (this.tickCount % 3 == 0) {
+                          sl.sendParticles(ParticleTypes.SMOKE, getX(), getY() + 1.2D, getZ(), 4, 0.3D, 0.8D, 0.3D, 0.01D);
+                          sl.sendParticles(new DustParticleOptions(new Vector3f(0.85F, 0.0F, 0.0F), 1.0F),
+                                  getX(), getY() + 1.4D, getZ(), 2, 0.35D, 0.6D, 0.35D, 0.0D);
+                      }
+                      if (this.tickCount % 60 == 0) {
+                          this.playSound(SoundEvents.ENDERMAN_SCREAM, 1.4F, 0.5F);
+                      }
+                  }
+              }
+
+              @Override
+              public boolean doHurtTarget(Entity target) {
+                  boolean hit = super.doHurtTarget(target);
+                  if (hit && target instanceof LivingEntity le) {
+                      le.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
+                  }
+                  return hit;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/world/BunkerBuilder.java
+          package com.jerryhorror.mod.world;
+
+          import com.jerryhorror.mod.entity.DeadTomEntity;
+          import com.jerryhorror.mod.init.ModBlocks;
+          import com.jerryhorror.mod.init.ModEntities;
+          import net.minecraft.core.BlockPos;
+          import net.minecraft.core.Direction;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.world.level.block.Blocks;
+          import net.minecraft.world.level.block.DoorBlock;
+          import net.minecraft.world.level.block.LadderBlock;
+          import net.minecraft.world.level.block.StairBlock;
+          import net.minecraft.world.level.block.state.BlockState;
+          import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+          import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+
+          public class BunkerBuilder {
+              public static BlockPos lastRitualCenter = null;
+
+              public static BlockPos buildBunker(ServerLevel level, BlockPos entrance) {
+                  // Entrada do bunker (15:25)
+                  for (int dx = -1; dx <= 1; dx++) {
+                      level.setBlock(entrance.offset(dx, 0, -1), Blocks.COBBLESTONE.defaultBlockState(), 3);
+                      level.setBlock(entrance.offset(dx, 1, -1), Blocks.COBBLESTONE.defaultBlockState(), 3);
+                  }
+                  level.setBlock(entrance.above(), Blocks.COBBLESTONE_SLAB.defaultBlockState(), 3);
+                  level.setBlock(entrance, Blocks.DARK_OAK_TRAPDOOR.defaultBlockState(), 3);
+
+                  // Escada descendo 10 blocos para o Sul (+Z)
+                  for (int i = 1; i <= 10; i++) {
+                      BlockPos step = entrance.offset(0, -i, i);
+                      for (int dx = -1; dx <= 1; dx++) {
+                          for (int dy = -1; dy <= 3; dy++) {
+                              boolean wall = (dx == -1 || dx == 1 || dy == -1 || dy == 3);
+                              level.setBlock(step.offset(dx, dy, 0),
+                                      wall ? Blocks.COBBLESTONE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 3);
+                          }
+                      }
+                      level.setBlock(step, Blocks.OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH), 3);
+                  }
+
+                  // Corredor com grades de ferro e velas (15:47)
+                  BlockPos hallStart = entrance.offset(0, -10, 11);
+                  for (int z = 0; z < 8; z++) {
+                      for (int x = -2; x <= 2; x++) {
+                          for (int y = -1; y <= 3; y++) {
+                              BlockPos p = hallStart.offset(x, y, z);
+                              if (y == -1 || y == 3 || x == -2 || x == 2) {
+                                  level.setBlock(p, Blocks.STONE_BRICKS.defaultBlockState(), 3);
+                              } else {
+                                  level.setBlock(p, Blocks.AIR.defaultBlockState(), 3);
+                              }
+                          }
+                      }
+                      if (z % 2 == 1) {
+                          level.setBlock(hallStart.offset(-1, 1, z), Blocks.IRON_BARS.defaultBlockState(), 3);
+                          level.setBlock(hallStart.offset(-1, 2, z), Blocks.IRON_BARS.defaultBlockState(), 3);
+                          BlockState litCandle = Blocks.CANDLE.defaultBlockState().setValue(BlockStateProperties.LIT, true);
+                          level.setBlock(hallStart.offset(1, 1, z), litCandle, 3);
+                      }
+                  }
+
+                  // Porta para a sala do ritual (15:55)
+                  BlockPos doorPos = hallStart.offset(0, 0, 8);
+                  level.setBlock(doorPos, Blocks.SPRUCE_DOOR.defaultBlockState().setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 3);
+                  level.setBlock(doorPos.above(), Blocks.SPRUCE_DOOR.defaultBlockState().setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 3);
+
+                  // Sala do Ritual Vermelha 11x6x11 (15:57)
+                  BlockPos roomCenter = hallStart.offset(0, 0, 14);
+                  lastRitualCenter = roomCenter;
+                  for (int x = -5; x <= 5; x++) {
+                      for (int z = -5; z <= 5; z++) {
+                          for (int y = -1; y <= 5; y++) {
+                              BlockPos p = roomCenter.offset(x, y, z);
+                              if (y == -1) {
+                                  level.setBlock(p, ModBlocks.RITUAL_FLOOR.get().defaultBlockState(), 3);
+                              } else if (y == 5 || Math.abs(x) == 5 || Math.abs(z) == 5) {
+                                  if (z == -5 && x == 0 && (y == 0 || y == 1)) continue;
+                                  if (z == 5 && x == 0 && (y == 0 || y == 1)) continue;
+                                  level.setBlock(p, Blocks.NETHER_BRICKS.defaultBlockState(), 3);
+                              } else {
+                                  level.setBlock(p, Blocks.AIR.defaultBlockState(), 3);
+                              }
+                          }
+                      }
+                  }
+
+                  // Pilares vermelhos e teias de aranha
+                  int[][] pillars = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}};
+                  for (int[] c : pillars) {
+                      for (int y = 0; y <= 4; y++) {
+                          level.setBlock(roomCenter.offset(c[0], y, c[1]), Blocks.REDSTONE_BLOCK.defaultBlockState(), 3);
+                      }
+                      level.setBlock(roomCenter.offset(c[0], 4, c[1] > 0 ? c[1] - 1 : c[1] + 1), Blocks.COBWEB.defaultBlockState(), 3);
+                  }
+                  level.setBlock(roomCenter.offset(0, 4, 0), Blocks.COBWEB.defaultBlockState(), 3);
+
+                  // Altar central com sangue e corpo do Tom
+                  for (int x = -1; x <= 1; x++) {
+                      for (int z = -1; z <= 1; z++) {
+                          level.setBlock(roomCenter.offset(x, 0, z), ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
+                      }
+                  }
+                  DeadTomEntity deadTom = ModEntities.DEAD_TOM.get().create(level);
+                  if (deadTom != null) {
+                      deadTom.moveTo(roomCenter.getX() + 0.5D, roomCenter.getY(), roomCenter.getZ() + 0.5D, 0.0F, 0.0F);
+                      level.addFreshEntity(deadTom);
+                  }
+
+                  // Tunel de fuga de Ardosia Profunda subindo de volta para a superficie (16:22)
+                  BlockPos escapeStart = roomCenter.offset(0, 0, 6);
+                  for (int z = 0; z < 6; z++) {
+                      for (int x = -1; x <= 1; x++) {
+                          for (int y = -1; y <= 2; y++) {
+                              boolean w = (x == -1 || x == 1 || y == -1 || y == 2);
+                              level.setBlock(escapeStart.offset(x, y, z),
+                                      w ? Blocks.DEEPSLATE_BRICKS.defaultBlockState() : Blocks.AIR.defaultBlockState(), 3);
+                          }
+                      }
+                  }
+                  BlockPos shaft = escapeStart.offset(0, 0, 5);
+                  for (int y = 0; y <= 13; y++) {
+                      for (int x = -1; x <= 1; x++) {
+                          for (int z = -1; z <= 1; z++) {
+                              BlockPos p = shaft.offset(x, y, z);
+                              if (x == 0 && z == 0) {
+                                  level.setBlock(p, Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, Direction.NORTH), 3);
+                              } else if (y < 11) {
+                                  level.setBlock(p, Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 3);
+                              }
+                          }
+                      }
+                  }
+                  return roomCenter;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/story/StoryManager.java
+          package com.jerryhorror.mod.story;
+
+          import com.jerryhorror.mod.entity.DeadTomEntity;
+          import com.jerryhorror.mod.entity.JerryEntity;
+          import com.jerryhorror.mod.entity.ShadowDemonEntity;
+          import com.jerryhorror.mod.entity.TomEntity;
+          import com.jerryhorror.mod.init.ModBlocks;
+          import com.jerryhorror.mod.init.ModEntities;
+          import com.jerryhorror.mod.world.BunkerBuilder;
+          import com.mojang.brigadier.arguments.IntegerArgumentType;
+          import net.minecraft.commands.Commands;
+          import net.minecraft.core.BlockPos;
+          import net.minecraft.network.chat.Component;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.server.level.ServerPlayer;
+          import net.minecraft.sounds.SoundEvents;
+          import net.minecraft.sounds.SoundSource;
+          import net.minecraft.world.entity.EntityType;
+          import net.minecraft.world.entity.animal.Wolf;
+          import net.minecraft.world.entity.item.ItemEntity;
+          import net.minecraft.world.entity.monster.Skeleton;
+          import net.minecraft.world.item.ItemStack;
+          import net.minecraft.world.item.Items;
+          import net.minecraft.world.level.block.BedBlock;
+          import net.minecraft.world.level.block.Blocks;
+          import net.minecraft.world.level.block.ChestBlock;
+          import net.minecraft.world.level.block.DoorBlock;
+          import net.minecraft.world.level.block.state.BlockState;
+          import net.minecraft.world.phys.AABB;
+          import net.minecraftforge.event.RegisterCommandsEvent;
+          import net.minecraftforge.event.ServerChatEvent;
+          import net.minecraftforge.event.TickEvent;
+          import net.minecraftforge.event.entity.player.PlayerContainerEvent;
+          import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+          import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+          import java.util.List;
+
+          public class StoryManager {
+              public static int currentPhase = 1;
+              public static BlockPos lastBedPos = null;
+              public static BlockPos lastGravePos = null;
+              public static boolean demonSpawned = false;
+              private static int phaseTimer = 0;
+
+              @SubscribeEvent
+              public void onRegisterCommands(RegisterCommandsEvent event) {
+                  event.getDispatcher().register(Commands.literal("jerry")
+                          .then(Commands.literal("start").executes(ctx -> {
+                              ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                              startPhase(sp.serverLevel(), sp, 1);
+                              return 1;
+                          }))
+                          .then(Commands.literal("next").executes(ctx -> {
+                              ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                              int next = Math.min(11, currentPhase + 1);
+                              startPhase(sp.serverLevel(), sp, next);
+                              return 1;
+                          }))
+                          .then(Commands.literal("phase")
+                                  .then(Commands.argument("num", IntegerArgumentType.integer(1, 11)).executes(ctx -> {
+                                      ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                                      int p = IntegerArgumentType.getInteger(ctx, "num");
+                                      startPhase(sp.serverLevel(), sp, p);
+                                      return 1;
+                                  })))
+                          .then(Commands.literal("tom").executes(ctx -> {
+                              ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                              spawnTom(sp.serverLevel(), sp.blockPosition().offset(2, 0, 0));
+                              sp.sendSystemMessage(Component.literal("§bTom (coleira azul) apareceu!"));
+                              return 1;
+                          }))
+                          .then(Commands.literal("bunker").executes(ctx -> {
+                              ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                              BunkerBuilder.buildBunker(sp.serverLevel(), sp.blockPosition().offset(4, 0, 4));
+                              sp.sendSystemMessage(Component.literal("§4Um bunker subterraneo surgiu perto de voce..."));
+                              return 1;
+                          }))
+                          .then(Commands.literal("reset").executes(ctx -> {
+                              ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                              currentPhase = 1;
+                              demonSpawned = false;
+                              JerryEntity j = findJerry(sp.serverLevel(), sp.blockPosition());
+                              if (j != null) {
+                                  j.setFaceState(JerryEntity.FACE_NORMAL);
+                                  j.setAnimState(JerryEntity.ANIM_NORMAL);
+                              }
+                              sp.sendSystemMessage(Component.literal("§aHistoria do Jerry resetada para a Fase 1!"));
+                              return 1;
+                          })));
+              }
+
+              // Domesticar lobo vanilla com osso transforma ele no Jerry (ou no Tom na Fase 6+)
+              @SubscribeEvent
+              public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+                  if (event.getLevel().isClientSide) return;
+                  if (event.getTarget() instanceof Wolf wolf && event.getItemStack().is(Items.BONE) && event.getEntity() instanceof ServerPlayer sp) {
+                      ServerLevel sl = sp.serverLevel();
+                      if (findJerry(sl, sp.blockPosition()) == null) {
+                          BlockPos pos = wolf.blockPosition();
+                          wolf.discard();
+                          JerryEntity j = spawnJerry(sl, pos);
+                          j.setFaceState(JerryEntity.FACE_HAPPY);
+                          sp.sendSystemMessage(Component.literal("§aVoce domesticou o Jerry! Diga no chat: 'rolar', 'flor', 'madeira' ou 'ferro'!"));
+                          event.setCanceled(true);
+                      } else if (currentPhase >= 5 && findTom(sl, sp.blockPosition()) == null) {
+                          BlockPos pos = wolf.blockPosition();
+                          wolf.discard();
+                          spawnTom(sl, pos);
+                          sp.sendSystemMessage(Component.literal("§bVoce domesticou o Tom (coleira azul)!"));
+                          event.setCanceled(true);
+                      }
+                  }
+              }
+
+              // Reconhecimento de voz via Chat (Portugues e Ingles) com icone de alto-falante
+              @SubscribeEvent
+              public void onChat(ServerChatEvent event) {
+                  ServerPlayer sp = event.getPlayer();
+                  ServerLevel sl = sp.serverLevel();
+                  String msg = event.getRawText().toLowerCase();
+                  JerryEntity jerry = findJerry(sl, sp.blockPosition());
+                  TomEntity tom = findTom(sl, sp.blockPosition());
+
+                  if (jerry != null) {
+                      if (msg.contains("roll") || msg.contains("rolar") || msg.contains("gira")) {
+                          jerry.setSpeakerTimer(60);
+                          jerry.triggerRollOver(currentPhase <= 1);
+                          if (currentPhase == 6) {
+                              jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                              sp.sendSystemMessage(Component.literal("§7Jerry rolou... mas continuou te encarando com aqueles olhos."));
+                          }
+                      } else if (msg.contains("flower") || msg.contains("flor")) {
+                          jerry.setSpeakerTimer(60);
+                          if (currentPhase <= 1) {
+                              jerry.setFaceState(JerryEntity.FACE_HAPPY);
+                              dropItem(sl, jerry.blockPosition(), new ItemStack(Items.POPPY, 1));
+                              sp.sendSystemMessage(Component.literal("§aJerry trouxe uma flor para voce!"));
+                          } else {
+                              jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                              sp.sendSystemMessage(Component.literal("§7Jerry ignorou o comando e ficou te encarando..."));
+                          }
+                      } else if (msg.contains("wood") || msg.contains("madeira")) {
+                          jerry.setSpeakerTimer(60);
+                          if (currentPhase <= 1) {
+                              dropItem(sl, jerry.blockPosition(), new ItemStack(Items.OAK_LOG, 16));
+                              sp.sendSystemMessage(Component.literal("§aJerry coletou 16 madeiras!"));
+                          }
+                      } else if (msg.contains("iron") || msg.contains("ferro")) {
+                          jerry.setSpeakerTimer(60);
+                          if (currentPhase <= 2) {
+                              dropItem(sl, jerry.blockPosition(), new ItemStack(Items.RAW_IRON, 12));
+                              sp.sendSystemMessage(Component.literal("§aJerry minerou ferro para voce!"));
+                          }
+                      } else if (msg.contains("blood") || msg.contains("sangue") || msg.contains("what is this") || msg.contains("que isso")) {
+                          jerry.setSpeakerTimer(60);
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          jerry.setAnimState(JerryEntity.ANIM_NORMAL);
+                          sl.playSound(null, jerry.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 1.5F, 0.6F);
+                          sp.sendSystemMessage(Component.literal("§4Jerry te encara em silencio... os olhos dele estao estranhamente realistas."));
+                      } else if (msg.contains("favorite") || msg.contains("favorito") || msg.contains("preferido")) {
+                          jerry.setSpeakerTimer(60);
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          sl.playSound(null, jerry.blockPosition(), SoundEvents.WOLF_GROWL, SoundSource.HOSTILE, 1.2F, 0.5F);
+                          sp.sendSystemMessage(Component.literal("§cJerry ouviu voce dizer que Tom e seu favorito..."));
+                      }
+                  }
+
+                  if (tom != null && (msg.contains("hug") || msg.contains("abrac"))) {
+                      if (jerry != null) {
+                          tom.triggerHug(jerry);
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          sp.sendSystemMessage(Component.literal("§bTom abracou o Jerry! §7(Mas Jerry parece odiar isso...)"));
+                      }
+                  }
+              }
+
+              // Fase 11: Quando o jogador abre um bau enquanto Jerry esta sorrindo na cama -> Jerry levanta em 2 patas!
+              @SubscribeEvent
+              public void onContainerOpen(PlayerContainerEvent.Open event) {
+                  if (event.getEntity() instanceof ServerPlayer sp && currentPhase == 11) {
+                      JerryEntity jerry = findJerry(sp.serverLevel(), sp.blockPosition());
+                      if (jerry != null && jerry.getAnimState() == JerryEntity.ANIM_SLEEP_BED) {
+                          jerry.setFaceState(JerryEntity.FACE_SMILE);
+                          jerry.setAnimState(JerryEntity.ANIM_STAND_UPRIGHT);
+                          sp.serverLevel().playSound(null, jerry.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 2.0F, 0.45F);
+                          sp.sendSystemMessage(Component.literal("§4...Olhe para a cama."));
+                      }
+                  }
+              }
+
+              @SubscribeEvent
+              public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+                  if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer sp)) return;
+                  ServerLevel sl = sp.serverLevel();
+                  phaseTimer++;
+
+                  // Detectar quando o jogador deita na cama (Fases 4 e 7 acordam no meio da noite!)
+                  if (sp.isSleeping() && sp.getSleepTimer() >= 35) {
+                      lastBedPos = sp.blockPosition();
+                      if (currentPhase == 4) {
+                          sp.stopSleeping();
+                          sl.setDayTime(18000);
+                          sl.playSound(null, sp.blockPosition(), SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 1.2F, 0.7F);
+                          JerryEntity jerry = findJerry(sl, sp.blockPosition());
+                          if (jerry != null) {
+                              BlockPos chestPos = findNearestBlock(sl, sp.blockPosition(), 12, ChestBlock.class);
+                              if (chestPos != null) {
+                                  jerry.teleportTo(chestPos.getX() + 0.5D, chestPos.getY(), chestPos.getZ() + 1.2D);
+                                  jerry.setAnimState(JerryEntity.ANIM_DIG_CHEST);
+                              } else {
+                                  jerry.setAnimState(JerryEntity.ANIM_MARK_TERRITORY);
+                              }
+                              jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          }
+                          sp.sendSystemMessage(Component.literal("§cVoce acordou no meio da noite com barulhos estranhos na casa..."));
+                      } else if (currentPhase == 7) {
+                          sp.stopSleeping();
+                          sl.setDayTime(18500);
+                          triggerTomMurderScene(sl, sp);
+                      }
+                  }
+
+                  // Fase 9/10: Se jogador entrar na sala do ritual -> Spawna Entidade Sombria!
+                  if ((currentPhase == 9 || currentPhase == 10) && BunkerBuilder.lastRitualCenter != null && !demonSpawned) {
+                      if (sp.blockPosition().distSqr(BunkerBuilder.lastRitualCenter) < 30.0D) {
+                          currentPhase = 10;
+                          demonSpawned = true;
+                          ShadowDemonEntity demon = ModEntities.SHADOW_DEMON.get().create(sl);
+                          if (demon != null) {
+                              BlockPos spPos = BunkerBuilder.lastRitualCenter.offset(0, 0, -4);
+                              demon.moveTo(spPos.getX() + 0.5D, spPos.getY(), spPos.getZ() + 0.5D, 0.0F, 0.0F);
+                              sl.addFreshEntity(demon);
+                          }
+                          sl.playSound(null, sp.blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 1.5F, 0.5F);
+                          sp.sendSystemMessage(Component.literal("§4§lCORRA! ALGO ENTROU NA SALA DO RITUAL! FUJA PELO TUNEL NOS FUNDOS!"));
+                      }
+                  }
+
+                  // Se o jogador escapou da sala do ritual para a superficie na Fase 10 -> Inicia Fase 11 (Final)!
+                  if (currentPhase == 10 && demonSpawned && BunkerBuilder.lastRitualCenter != null) {
+                      if (sp.blockPosition().getY() >= BunkerBuilder.lastRitualCenter.getY() + 9) {
+                          List<ShadowDemonEntity> demons = sl.getEntitiesOfClass(ShadowDemonEntity.class, new AABB(sp.blockPosition()).inflate(64));
+                          for (ShadowDemonEntity d : demons) d.discard();
+                          startPhase(sl, sp, 11);
+                      }
+                  }
+
+                  // Fase 11: Se jogador nao tem bau, olhar para longe por 4 segundos tambem faz Jerry levantar em 2 patas
+                  if (currentPhase == 11 && phaseTimer % 40 == 0) {
+                      JerryEntity jerry = findJerry(sl, sp.blockPosition());
+                      if (jerry != null && jerry.getAnimState() == JerryEntity.ANIM_SLEEP_BED && jerry.distanceTo(sp) < 12.0D) {
+                          double dot = sp.getLookAngle().normalize().dot(jerry.position().subtract(sp.position()).normalize());
+                          if (dot < -0.2D) {
+                              jerry.setFaceState(JerryEntity.FACE_SMILE);
+                              jerry.setAnimState(JerryEntity.ANIM_STAND_UPRIGHT);
+                              sl.playSound(null, jerry.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 2.0F, 0.45F);
+                              sp.sendSystemMessage(Component.literal("§4...Nao olhe para tras."));
+                          }
+                      }
+                  }
+              }
+
+              public static void startPhase(ServerLevel sl, ServerPlayer sp, int phase) {
+                  currentPhase = phase;
+                  phaseTimer = 0;
+                  JerryEntity jerry = findJerry(sl, sp.blockPosition());
+                  if (jerry == null) jerry = spawnJerry(sl, sp.blockPosition().offset(2, 0, 2));
+
+                  switch (phase) {
+                      case 1 -> {
+                          // 00:00 - 02:35: Fase amigavel (truques, coletar madeira/flor/ferro)
+                          jerry.setFaceState(JerryEntity.FACE_HAPPY);
+                          jerry.setAnimState(JerryEntity.ANIM_NORMAL);
+                          sp.getInventory().add(new ItemStack(Items.BONE, 8));
+                          sp.sendSystemMessage(Component.literal("§a[Fase 1] Jerry e seu melhor amigo! Digite no chat: 'rolar', 'flor', 'madeira', 'ferro'. (Use /jerry next para avancar a historia)"));
+                      }
+                      case 2 -> {
+                          // 02:55 - 03:35: Pocas de sangue na casa + olhos realistas encarando
+                          BlockPos center = sp.blockPosition();
+                          for (int i = 0; i < 6; i++) {
+                              BlockPos bp = center.offset(sl.random.nextInt(7) - 3, 0, sl.random.nextInt(7) - 3);
+                              if (sl.getBlockState(bp).isAir() && !sl.getBlockState(bp.below()).isAir()) {
+                                  sl.setBlock(bp, ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
+                              }
+                          }
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          jerry.setAnimState(JerryEntity.ANIM_NORMAL);
+                          sl.playSound(null, sp.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 1.5F, 0.6F);
+                          sp.sendSystemMessage(Component.literal("§c[Fase 2] Por que tem tanto sangue espalhado por aqui?! Pergunte 'por que tem sangue' no chat..."));
+                      }
+                      case 3 -> {
+                          // 04:20 - 05:25: Empurrar no penhasco + esmagar osso agressivamente
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          jerry.setAnimState(JerryEntity.ANIM_NORMAL);
+                          sp.getInventory().add(new ItemStack(Items.BONE, 3));
+                          sp.sendSystemMessage(Component.literal("§c[Fase 3] Jerry esta estranho... Chegue perto dele (ele vai te empurrar!) ou tente dar um osso para ele."));
+                      }
+                      case 4 -> {
+                          // 05:50 - 07:45: Jerry toma sua cama, marca territorio e mexe nos baus a noite
+                          BlockPos bed = findNearestBlock(sl, sp.blockPosition(), 16, BedBlock.class);
+                          if (bed != null) {
+                              lastBedPos = bed;
+                              jerry.teleportTo(bed.getX() + 0.5D, bed.getY() + 0.6D, bed.getZ() + 0.5D);
+                          }
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          jerry.setAnimState(JerryEntity.ANIM_SLEEP_BED);
+                          sl.setDayTime(13500);
+                          sp.sendSystemMessage(Component.literal("§c[Fase 4] Jerry deitou na sua cama! Clique nele ou tente dormir na cama..."));
+                      }
+                      case 5 -> {
+                          // 07:50 - 09:00: Nascer do sol - Jerry sentado igual humano na colina
+                          sl.setDayTime(23150);
+                          BlockPos hill = sp.blockPosition().offset(6, 0, 6);
+                          jerry.teleportTo(hill.getX() + 0.5D, sp.getY(), hill.getZ() + 0.5D);
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          jerry.setAnimState(JerryEntity.ANIM_HUMAN_SIT);
+                          sl.playSound(null, jerry.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 1.4F, 0.55F);
+                          sp.sendSystemMessage(Component.literal("§c[Fase 5] O sol esta nascendo... Olhe como o Jerry esta sentado la fora."));
+                      }
+                      case 6 -> {
+                          // 09:10 - 11:30: Adotando o Tom (coleira azul) e ciumes do Jerry
+                          jerry.setAnimState(JerryEntity.ANIM_NORMAL);
+                          jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                          if (findTom(sl, sp.blockPosition()) == null) {
+                              spawnTom(sl, sp.blockPosition().offset(-2, 0, 2));
+                          }
+                          sp.sendSystemMessage(Component.literal("§b[Fase 6] Voce adotou o Tom (coleira azul)! Diga 'abracar' ou 'favorito' no chat para ver a reacao do Jerry..."));
+                      }
+                      case 7 -> {
+                          // 11:45 - 13:30: Noite do assassinato do Tom!
+                          sl.setDayTime(14000);
+                          triggerTomMurderScene(sl, sp);
+                      }
+                      case 8 -> {
+                          // 13:35 - 15:00: Enterro na chuva + invasao de esqueletos + cova violada!
+                          sl.setWeatherParameters(0, 6000, true, false);
+                          sl.setDayTime(16000);
+                          for (int i = 0; i < 3; i++) {
+                              Skeleton sk = EntityType.SKELETON.create(sl);
+                              if (sk != null) {
+                                  sk.moveTo(sp.getX() + (i * 3 - 3), sp.getY(), sp.getZ() + 8, 0, 0);
+                                  sl.addFreshEntity(sk);
+                              }
+                          }
+                          if (lastGravePos != null) {
+                              sl.setBlock(lastGravePos, Blocks.AIR.defaultBlockState(), 3);
+                              sl.setBlock(lastGravePos.below(), Blocks.AIR.defaultBlockState(), 3);
+                              sl.setBlock(lastGravePos.offset(1, 0, 0), ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
+                          }
+                          sp.sendSystemMessage(Component.literal("§4[Fase 8] Esqueletos atacaram! E o tumulo do Tom foi CAVADO E ESTA VAZIO..."));
+                      }
+                      case 9 -> {
+                          // 15:10 - 16:05: Trilha de sangue levando ao Bunker Subterraneo + Sala do Ritual
+                          demonSpawned = false;
+                          BlockPos entrance = sp.blockPosition().offset(0, 0, 6);
+                          for (int z = 1; z <= 5; z++) {
+                              BlockPos trail = sp.blockPosition().offset(0, 0, z);
+                              if (sl.getBlockState(trail).isAir()) {
+                                  sl.setBlock(trail, ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
+                              }
+                          }
+                          BunkerBuilder.buildBunker(sl, entrance);
+                          sp.sendSystemMessage(Component.literal("§4[Fase 9] Siga a trilha de sangue ate a entrada secreta do Bunker subterraneo..."));
+                      }
+                      case 10 -> {
+                          // 16:10 - 16:40: Entidade Sombria na Sala do Ritual!
+                          if (BunkerBuilder.lastRitualCenter == null) {
+                              BunkerBuilder.buildBunker(sl, sp.blockPosition().offset(0, 0, 6));
+                          }
+                          demonSpawned = true;
+                          ShadowDemonEntity demon = ModEntities.SHADOW_DEMON.get().create(sl);
+                          if (demon != null) {
+                              demon.moveTo(sp.getX(), sp.getY(), sp.getZ() - 5, 0, 0);
+                              sl.addFreshEntity(demon);
+                          }
+                          sl.playSound(null, sp.blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 1.5F, 0.5F);
+                          sp.sendSystemMessage(Component.literal("§4§l[Fase 10] A ENTIDADE SOMBRIA ESTA TE PERSEGUINDO! FUJA PARA A SUPERFICIE!"));
+                      }
+                      case 11 -> {
+                          // 16:45 - 17:25: Final - Jerry sorrindo na cama -> Levanta em 2 patas -> THE END...?
+                          BlockPos bed = findNearestBlock(sl, sp.blockPosition(), 24, BedBlock.class);
+                          if (bed != null) {
+                              jerry.teleportTo(bed.getX() + 0.5D, bed.getY() + 0.6D, bed.getZ() + 0.5D);
+                          } else {
+                              jerry.teleportTo(sp.getX() + 3.0D, sp.getY(), sp.getZ() + 3.0D);
+                          }
+                          jerry.setFaceState(JerryEntity.FACE_SMILE);
+                          jerry.setAnimState(JerryEntity.ANIM_SLEEP_BED);
+                          sl.playSound(null, sp.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.HOSTILE, 1.5F, 0.5F);
+                          sp.sendSystemMessage(Component.literal("§4[Fase 11 - FINAL] Jerry esta deitado na cama... SORRINDO. Abra um bau ou vire de costas para ele..."));
+                      }
+                  }
+              }
+
+              private static void triggerTomMurderScene(ServerLevel sl, ServerPlayer sp) {
+                  TomEntity tom = findTom(sl, sp.blockPosition());
+                  BlockPos deathPos = (tom != null) ? tom.blockPosition() : sp.blockPosition().offset(5, 0, 0);
+                  if (tom != null) tom.discard();
+
+                  // Abrir porta proxima
+                  BlockPos door = findNearestBlock(sl, sp.blockPosition(), 14, DoorBlock.class);
+                  if (door != null) {
+                      BlockState ds = sl.getBlockState(door);
+                      if (ds.hasProperty(DoorBlock.OPEN)) {
+                          sl.setBlock(door, ds.setValue(DoorBlock.OPEN, true), 3);
+                      }
+                  }
+
+                  // Pocas de sangue + Tom Morto
+                  for (int dx = -1; dx <= 1; dx++) {
+                      for (int dz = -1; dz <= 1; dz++) {
+                          BlockPos bp = deathPos.offset(dx, 0, dz);
+                          if (sl.getBlockState(bp).isAir()) {
+                              sl.setBlock(bp, ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
+                          }
+                      }
+                  }
+                  DeadTomEntity deadTom = ModEntities.DEAD_TOM.get().create(sl);
+                  if (deadTom != null) {
+                      deadTom.moveTo(deathPos.getX() + 0.5D, deathPos.getY(), deathPos.getZ() + 0.5D, 0, 0);
+                      sl.addFreshEntity(deadTom);
+                  }
+
+                  // Jerry fingindo dormir na cama com sangue embaixo!
+                  JerryEntity jerry = findJerry(sl, sp.blockPosition());
+                  if (jerry != null) {
+                      BlockPos bed = findNearestBlock(sl, sp.blockPosition(), 16, BedBlock.class);
+                      if (bed != null) {
+                          jerry.teleportTo(bed.getX() + 0.5D, bed.getY() + 0.6D, bed.getZ() + 0.5D);
+                          if (sl.getBlockState(bed.offset(1, 0, 0)).isAir()) {
+                              sl.setBlock(bed.offset(1, 0, 0), ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
+                          }
+                      }
+                      jerry.setAnimState(JerryEntity.ANIM_SLEEP_BED);
+                      jerry.setFaceState(JerryEntity.FACE_NORMAL);
+                  }
+
+                  sl.playSound(null, sp.blockPosition(), SoundEvents.WOLF_DEATH, SoundSource.HOSTILE, 1.5F, 0.7F);
+                  sp.getInventory().add(new ItemStack(Items.IRON_SHOVEL, 1));
+                  sp.sendSystemMessage(Component.literal("§4[Fase 7] A porta se abriu! O Tom foi morto numa poca de sangue... E o Jerry esta 'dormindo' na cama! (Clique no Jerry e depois clique com a pa no Tom para enterra-lo)"));
+              }
+
+              public static void buryTom(ServerLevel sl, ServerPlayer sp, DeadTomEntity deadTom) {
+                  BlockPos p = deadTom.blockPosition();
+                  lastGravePos = p;
+                  deadTom.discard();
+                  sl.setBlock(p, Blocks.GRAVEL.defaultBlockState(), 3);
+                  sl.setBlock(p.north(), Blocks.COBBLESTONE_WALL.defaultBlockState(), 3);
+                  sl.setBlock(p.north().above(), Blocks.TORCH.defaultBlockState(), 3);
+                  sp.sendSystemMessage(Component.literal("§7Voce enterrou o Tom... Uma tempestade comecou."));
+                  startPhase(sl, sp, 8);
+              }
+
+              private static JerryEntity spawnJerry(ServerLevel sl, BlockPos pos) {
+                  JerryEntity j = ModEntities.JERRY.get().create(sl);
+                  if (j != null) {
+                      j.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0, 0);
+                      sl.addFreshEntity(j);
+                  }
+                  return j;
+              }
+
+              private static TomEntity spawnTom(ServerLevel sl, BlockPos pos) {
+                  TomEntity t = ModEntities.TOM.get().create(sl);
+                  if (t != null) {
+                      t.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0, 0);
+                      sl.addFreshEntity(t);
+                  }
+                  return t;
+              }
+
+              private static JerryEntity findJerry(ServerLevel sl, BlockPos center) {
+                  List<JerryEntity> list = sl.getEntitiesOfClass(JerryEntity.class, new AABB(center).inflate(96));
+                  return list.isEmpty() ? null : list.get(0);
+              }
+
+              private static TomEntity findTom(ServerLevel sl, BlockPos center) {
+                  List<TomEntity> list = sl.getEntitiesOfClass(TomEntity.class, new AABB(center).inflate(96));
+                  return list.isEmpty() ? null : list.get(0);
+              }
+
+              private static void dropItem(ServerLevel sl, BlockPos pos, ItemStack stack) {
+                  ItemEntity ie = new ItemEntity(sl, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, stack);
+                  sl.addFreshEntity(ie);
+              }
+
+              private static BlockPos findNearestBlock(ServerLevel sl, BlockPos origin, int radius, Class<?> blockClass) {
+                  BlockPos best = null;
+                  double bestDist = Double.MAX_VALUE;
+                  for (int x = -radius; x <= radius; x++) {
+                      for (int y = -4; y <= 4; y++) {
+                          for (int z = -radius; z <= radius; z++) {
+                              BlockPos p = origin.offset(x, y, z);
+                              if (blockClass.isInstance(sl.getBlockState(p).getBlock())) {
+                                  double d = p.distSqr(origin);
+                                  if (d < bestDist) {
+                                      bestDist = d;
+                                      best = p;
+                                  }
+                              }
+                          }
+                      }
+                  }
+                  return best;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/model/JerryModel.java
+          package com.jerryhorror.mod.client.model;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.entity.JerryEntity;
+          import com.jerryhorror.mod.entity.TomEntity;
+          import com.mojang.blaze3d.vertex.PoseStack;
+          import com.mojang.blaze3d.vertex.VertexConsumer;
+          import net.minecraft.client.model.EntityModel;
+          import net.minecraft.client.model.geom.ModelLayerLocation;
+          import net.minecraft.client.model.geom.ModelPart;
+          import net.minecraft.client.model.geom.PartPose;
+          import net.minecraft.client.model.geom.builders.CubeListBuilder;
+          import net.minecraft.client.model.geom.builders.LayerDefinition;
+          import net.minecraft.client.model.geom.builders.MeshDefinition;
+          import net.minecraft.client.model.geom.builders.PartDefinition;
+          import net.minecraft.resources.ResourceLocation;
+          import net.minecraft.util.Mth;
+          import net.minecraft.world.entity.PathfinderMob;
+
+          public class JerryModel<T extends PathfinderMob> extends EntityModel<T> {
+              public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(
+                      new ResourceLocation(JerryHorrorMod.MODID, "jerry"), "main");
+
+              private final ModelPart root;
+              private final ModelPart head;
+              private final ModelPart upperBody;
+              private final ModelPart body;
+              private final ModelPart leg0;
+              private final ModelPart leg1;
+              private final ModelPart leg2;
+              private final ModelPart leg3;
+              private final ModelPart tail;
+
+              public JerryModel(ModelPart base) {
+                  this.root = base.getChild("root");
+                  this.head = this.root.getChild("head");
+                  this.upperBody = this.root.getChild("upper_body");
+                  this.body = this.root.getChild("body");
+                  this.leg0 = this.root.getChild("leg0");
+                  this.leg1 = this.root.getChild("leg1");
+                  this.leg2 = this.root.getChild("leg2");
+                  this.leg3 = this.root.getChild("leg3");
+                  this.tail = this.root.getChild("tail");
+              }
+
+              public static LayerDefinition createBodyLayer() {
+                  MeshDefinition mesh = new MeshDefinition();
+                  PartDefinition rootPart = mesh.getRoot().addOrReplaceChild("root", CubeListBuilder.create(), PartPose.offset(0.0F, 16.0F, 0.0F));
+
+                  PartDefinition head = rootPart.addOrReplaceChild("head",
+                          CubeListBuilder.create().texOffs(0, 0).addBox(-3.0F, -3.0F, -2.0F, 6.0F, 6.0F, 4.0F),
+                          PartPose.offset(0.0F, -2.5F, -7.0F));
+                  head.addOrReplaceChild("ear1",
+                          CubeListBuilder.create().texOffs(16, 14).addBox(-3.0F, -5.0F, 0.0F, 2.0F, 2.0F, 1.0F),
+                          PartPose.ZERO);
+                  head.addOrReplaceChild("ear2",
+                          CubeListBuilder.create().texOffs(16, 14).addBox(1.0F, -5.0F, 0.0F, 2.0F, 2.0F, 1.0F),
+                          PartPose.ZERO);
+                  head.addOrReplaceChild("nose",
+                          CubeListBuilder.create().texOffs(0, 10).addBox(-1.5F, 0.0F, -5.0F, 3.0F, 3.0F, 4.0F),
+                          PartPose.ZERO);
+
+                  rootPart.addOrReplaceChild("upper_body",
+                          CubeListBuilder.create()
+                                  .texOffs(21, 0).addBox(-4.0F, -3.0F, -3.0F, 8.0F, 6.0F, 7.0F)
+                                  .texOffs(42, 0).addBox(-4.2F, -3.2F, -3.3F, 8.4F, 6.4F, 2.0F),
+                          PartPose.offset(0.0F, -2.0F, -3.0F));
+
+                  rootPart.addOrReplaceChild("body",
+                          CubeListBuilder.create().texOffs(18, 14).addBox(-3.0F, -3.0F, -2.0F, 6.0F, 6.0F, 9.0F),
+                          PartPose.offset(0.0F, -2.0F, 2.0F));
+
+                  CubeListBuilder leg = CubeListBuilder.create().texOffs(0, 18).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 8.0F, 2.0F);
+                  rootPart.addOrReplaceChild("leg0", leg, PartPose.offset(-1.5F, 0.0F, 7.0F));
+                  rootPart.addOrReplaceChild("leg1", leg, PartPose.offset(1.5F, 0.0F, 7.0F));
+                  rootPart.addOrReplaceChild("leg2", leg, PartPose.offset(-1.5F, 0.0F, -4.0F));
+                  rootPart.addOrReplaceChild("leg3", leg, PartPose.offset(1.5F, 0.0F, -4.0F));
+
+                  rootPart.addOrReplaceChild("tail",
+                          CubeListBuilder.create().texOffs(9, 18).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 8.0F, 2.0F),
+                          PartPose.offset(0.0F, -3.0F, 8.5F));
+
+                  return LayerDefinition.create(mesh, 64, 32);
+              }
+
+              private void resetPose() {
+                  root.setPos(0.0F, 16.0F, 0.0F);
+                  root.setRotation(0.0F, 0.0F, 0.0F);
+                  head.setPos(0.0F, -2.5F, -7.0F);
+                  head.setRotation(0.0F, 0.0F, 0.0F);
+                  upperBody.setPos(0.0F, -2.0F, -3.0F);
+                  upperBody.setRotation(0.0F, 0.0F, 0.0F);
+                  body.setPos(0.0F, -2.0F, 2.0F);
+                  body.setRotation(0.0F, 0.0F, 0.0F);
+                  leg0.setPos(-1.5F, 0.0F, 7.0F);
+                  leg0.setRotation(0.0F, 0.0F, 0.0F);
+                  leg1.setPos(1.5F, 0.0F, 7.0F);
+                  leg1.setRotation(0.0F, 0.0F, 0.0F);
+                  leg2.setPos(-1.5F, 0.0F, -4.0F);
+                  leg2.setRotation(0.0F, 0.0F, 0.0F);
+                  leg3.setPos(1.5F, 0.0F, -4.0F);
+                  leg3.setRotation(0.0F, 0.0F, 0.0F);
+                  tail.setPos(0.0F, -3.0F, 8.5F);
+                  tail.setRotation(0.55F, 0.0F, 0.0F);
+              }
+
+              @Override
+              public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+                  resetPose();
+                  head.yRot = netHeadYaw * ((float) Math.PI / 180F);
+                  head.xRot = headPitch * ((float) Math.PI / 180F);
+
+                  if (entity instanceof TomEntity tom && tom.isHugging()) {
+                      leg2.xRot = -1.25F;
+                      leg3.xRot = -1.25F;
+                      leg2.zRot = 0.25F;
+                      leg3.zRot = -0.25F;
+                      tail.yRot = Mth.sin(ageInTicks * 0.6F) * 0.5F;
+                      return;
+                  }
+
+                  int anim = (entity instanceof JerryEntity j) ? j.getAnimState() : JerryEntity.ANIM_NORMAL;
+                  boolean sitting = (entity instanceof JerryEntity j) && j.isJerrySitting();
+
+                  switch (anim) {
+                      case JerryEntity.ANIM_ROLL_OVER -> {
+                          root.y = 20.0F;
+                          root.zRot = ageInTicks * 0.45F;
+                          leg0.xRot = 0.5F;
+                          leg1.xRot = -0.5F;
+                          leg2.xRot = -0.5F;
+                          leg3.xRot = 0.5F;
+                      }
+                      case JerryEntity.ANIM_SLEEP_BED -> {
+                          root.y = 21.0F;
+                          head.y = -0.5F;
+                          leg0.xRot = 1.45F;
+                          leg1.xRot = 1.45F;
+                          leg2.xRot = -1.45F;
+                          leg3.xRot = -1.45F;
+                          tail.xRot = 1.4F;
+                      }
+                      case JerryEntity.ANIM_MARK_TERRITORY -> {
+                          leg1.zRot = -1.35F;
+                          body.zRot = -0.12F;
+                          tail.xRot = 1.1F;
+                      }
+                      case JerryEntity.ANIM_DIG_CHEST -> {
+                          root.y = 14.0F;
+                          body.xRot = 0.45F;
+                          upperBody.xRot = 0.45F;
+                          head.y = -5.5F;
+                          leg2.xRot = -1.1F + Mth.sin(ageInTicks * 0.9F) * 0.55F;
+                          leg3.xRot = -1.1F - Mth.sin(ageInTicks * 0.9F) * 0.55F;
+                      }
+                      case JerryEntity.ANIM_HUMAN_SIT -> {
+                          // Sentado igual humano vendo o sol nascer (08:11)
+                          root.y = 20.5F;
+                          body.xRot = 1.57F;
+                          body.setPos(0.0F, -2.0F, 0.0F);
+                          upperBody.xRot = 1.57F;
+                          upperBody.setPos(0.0F, -8.0F, 0.0F);
+                          head.setPos(0.0F, -13.5F, 0.0F);
+                          leg0.setPos(-1.8F, 1.5F, -1.0F);
+                          leg0.setRotation(-1.55F, 0.0F, 0.45F);
+                          leg1.setPos(1.8F, 1.5F, -1.0F);
+                          leg1.setRotation(-1.55F, 0.0F, -0.45F);
+                          leg2.setPos(-3.8F, -8.0F, -1.5F);
+                          leg2.setRotation(-0.35F, 0.0F, 0.25F);
+                          leg3.setPos(3.8F, -8.0F, -1.5F);
+                          leg3.setRotation(-0.35F, 0.0F, -0.25F);
+                          tail.setPos(0.0F, 1.5F, 2.5F);
+                          tail.xRot = 1.4F;
+                      }
+                      case JerryEntity.ANIM_STAND_UPRIGHT, JerryEntity.ANIM_THE_END -> {
+                          // Em pe sobre duas patas na cama (17:15)
+                          root.y = 16.0F;
+                          leg0.setPos(-1.8F, 0.0F, 0.0F);
+                          leg1.setPos(1.8F, 0.0F, 0.0F);
+                          body.xRot = 1.57F;
+                          body.setPos(0.0F, -4.0F, 0.0F);
+                          upperBody.xRot = 1.57F;
+                          upperBody.setPos(0.0F, -10.5F, 0.0F);
+                          head.setPos(0.0F, -16.0F, 0.0F);
+                          leg2.setPos(-4.5F, -10.5F, 0.0F);
+                          leg2.setRotation(0.05F, 0.0F, 0.1F);
+                          leg3.setPos(4.5F, -10.5F, 0.0F);
+                          leg3.setRotation(0.05F, 0.0F, -0.1F);
+                          tail.setPos(0.0F, 1.0F, 2.0F);
+                          tail.xRot = 0.65F;
+                      }
+                      default -> {
+                          if (sitting) {
+                              root.y = 18.5F;
+                              body.xRot = -0.55F;
+                              leg0.xRot = -1.3F;
+                              leg1.xRot = -1.3F;
+                              leg2.xRot = -0.35F;
+                              leg3.xRot = -0.35F;
+                          } else {
+                              leg0.xRot = Mth.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount;
+                              leg1.xRot = Mth.cos(limbSwing * 0.6662F + (float) Math.PI) * 1.4F * limbSwingAmount;
+                              leg2.xRot = Mth.cos(limbSwing * 0.6662F + (float) Math.PI) * 1.4F * limbSwingAmount;
+                              leg3.xRot = Mth.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount;
+                              tail.yRot = Mth.cos(ageInTicks * 0.35F) * 0.25F;
+                          }
+                      }
+                  }
+              }
+
+              @Override
+              public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, float r, float g, float b, float a) {
+                  root.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/model/DeadTomModel.java
+          package com.jerryhorror.mod.client.model;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.entity.DeadTomEntity;
+          import com.mojang.blaze3d.vertex.PoseStack;
+          import com.mojang.blaze3d.vertex.VertexConsumer;
+          import net.minecraft.client.model.EntityModel;
+          import net.minecraft.client.model.geom.ModelLayerLocation;
+          import net.minecraft.client.model.geom.ModelPart;
+          import net.minecraft.client.model.geom.PartPose;
+          import net.minecraft.client.model.geom.builders.CubeListBuilder;
+          import net.minecraft.client.model.geom.builders.LayerDefinition;
+          import net.minecraft.client.model.geom.builders.MeshDefinition;
+          import net.minecraft.client.model.geom.builders.PartDefinition;
+          import net.minecraft.resources.ResourceLocation;
+
+          public class DeadTomModel extends EntityModel<DeadTomEntity> {
+              public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(
+                      new ResourceLocation(JerryHorrorMod.MODID, "dead_tom"), "main");
+
+              private final ModelPart root;
+
+              public DeadTomModel(ModelPart base) {
+                  this.root = base.getChild("root");
+              }
+
+              public static LayerDefinition createBodyLayer() {
+                  MeshDefinition mesh = new MeshDefinition();
+                  PartDefinition rootPart = mesh.getRoot().addOrReplaceChild("root", CubeListBuilder.create(),
+                          PartPose.offsetAndRotation(0.0F, 21.2F, 0.0F, 0.0F, 0.2F, 1.57F));
+
+                  PartDefinition head = rootPart.addOrReplaceChild("head",
+                          CubeListBuilder.create().texOffs(0, 0).addBox(-3.0F, -3.0F, -2.0F, 6.0F, 6.0F, 4.0F),
+                          PartPose.offsetAndRotation(0.0F, -1.5F, -7.0F, 0.3F, 0.35F, 0.25F));
+                  head.addOrReplaceChild("nose",
+                          CubeListBuilder.create().texOffs(0, 10).addBox(-1.5F, 0.0F, -5.0F, 3.0F, 3.0F, 4.0F),
+                          PartPose.ZERO);
+
+                  rootPart.addOrReplaceChild("upper_body",
+                          CubeListBuilder.create()
+                                  .texOffs(21, 0).addBox(-4.0F, -3.0F, -3.0F, 8.0F, 6.0F, 7.0F)
+                                  .texOffs(42, 0).addBox(-4.2F, -3.2F, -3.3F, 8.4F, 6.4F, 2.0F),
+                          PartPose.offset(0.0F, -2.0F, -3.0F));
+
+                  rootPart.addOrReplaceChild("body",
+                          CubeListBuilder.create().texOffs(18, 14).addBox(-3.0F, -3.0F, -2.0F, 6.0F, 6.0F, 9.0F),
+                          PartPose.offset(0.0F, -2.0F, 2.0F));
+
+                  CubeListBuilder leg = CubeListBuilder.create().texOffs(0, 18).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 8.0F, 2.0F);
+                  rootPart.addOrReplaceChild("leg0", leg, PartPose.offsetAndRotation(-1.5F, 0.0F, 6.5F, 0.6F, 0.0F, 0.3F));
+                  rootPart.addOrReplaceChild("leg1", leg, PartPose.offsetAndRotation(1.5F, 0.0F, 6.5F, -0.4F, 0.0F, -0.5F));
+                  rootPart.addOrReplaceChild("leg2", leg, PartPose.offsetAndRotation(-1.5F, 0.0F, -3.5F, -0.8F, 0.0F, 0.4F));
+                  rootPart.addOrReplaceChild("leg3", leg, PartPose.offsetAndRotation(1.5F, 0.0F, -3.5F, 0.5F, 0.0F, -0.3F));
+
+                  return LayerDefinition.create(mesh, 64, 32);
+              }
+
+              @Override
+              public void setupAnim(DeadTomEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {}
+
+              @Override
+              public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, float r, float g, float b, float a) {
+                  root.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/model/ShadowDemonModel.java
+          package com.jerryhorror.mod.client.model;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.entity.ShadowDemonEntity;
+          import com.mojang.blaze3d.vertex.PoseStack;
+          import com.mojang.blaze3d.vertex.VertexConsumer;
+          import net.minecraft.client.model.EntityModel;
+          import net.minecraft.client.model.geom.ModelLayerLocation;
+          import net.minecraft.client.model.geom.ModelPart;
+          import net.minecraft.client.model.geom.PartPose;
+          import net.minecraft.client.model.geom.builders.CubeListBuilder;
+          import net.minecraft.client.model.geom.builders.LayerDefinition;
+          import net.minecraft.client.model.geom.builders.MeshDefinition;
+          import net.minecraft.client.model.geom.builders.PartDefinition;
+          import net.minecraft.resources.ResourceLocation;
+          import net.minecraft.util.Mth;
+
+          public class ShadowDemonModel extends EntityModel<ShadowDemonEntity> {
+              public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(
+                      new ResourceLocation(JerryHorrorMod.MODID, "shadow_demon"), "main");
+
+              private final ModelPart head;
+              private final ModelPart body;
+              private final ModelPart rightArm;
+              private final ModelPart leftArm;
+              private final ModelPart rightLeg;
+              private final ModelPart leftLeg;
+
+              public ShadowDemonModel(ModelPart root) {
+                  this.head = root.getChild("head");
+                  this.body = root.getChild("body");
+                  this.rightArm = root.getChild("right_arm");
+                  this.leftArm = root.getChild("left_arm");
+                  this.rightLeg = root.getChild("right_leg");
+                  this.leftLeg = root.getChild("left_leg");
+              }
+
+              public static LayerDefinition createBodyLayer() {
+                  MeshDefinition mesh = new MeshDefinition();
+                  PartDefinition root = mesh.getRoot();
+                  root.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F), PartPose.offset(0.0F, -10.0F, 0.0F));
+                  root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(16, 16).addBox(-4.0F, 0.0F, -2.0F, 8.0F, 16.0F, 4.0F), PartPose.offset(0.0F, -10.0F, 0.0F));
+                  root.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, 0.0F, -1.0F, 2.0F, 20.0F, 2.0F), PartPose.offset(-4.0F, -9.0F, 0.0F));
+                  root.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(40, 16).addBox(0.0F, 0.0F, -1.0F, 2.0F, 20.0F, 2.0F), PartPose.offset(4.0F, -9.0F, 0.0F));
+                  root.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(0, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 18.0F, 2.0F), PartPose.offset(-2.0F, 6.0F, 0.0F));
+                  root.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(0, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 18.0F, 2.0F), PartPose.offset(2.0F, 6.0F, 0.0F));
+                  return LayerDefinition.create(mesh, 64, 64);
+              }
+
+              @Override
+              public void setupAnim(ShadowDemonEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+                  head.yRot = netHeadYaw * ((float) Math.PI / 180F);
+                  head.zRot = Mth.sin(ageInTicks * 0.2F) * 0.18F;
+                  rightLeg.xRot = Mth.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount;
+                  leftLeg.xRot = Mth.cos(limbSwing * 0.6662F + (float) Math.PI) * 1.4F * limbSwingAmount;
+                  rightArm.xRot = -1.2F + Mth.cos(limbSwing * 0.6662F) * 0.6F * limbSwingAmount;
+                  leftArm.xRot = -1.2F - Mth.cos(limbSwing * 0.6662F) * 0.6F * limbSwingAmount;
+              }
+
+              @Override
+              public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, float r, float g, float b, float a) {
+                  head.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+                  body.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+                  rightArm.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+                  leftArm.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+                  rightLeg.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+                  leftLeg.render(poseStack, buffer, packedLight, packedOverlay, r, g, b, a);
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/renderer/JerryRenderer.java
+          package com.jerryhorror.mod.client.renderer;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.client.model.JerryModel;
+          import com.jerryhorror.mod.entity.JerryEntity;
+          import com.mojang.blaze3d.vertex.PoseStack;
+          import com.mojang.blaze3d.vertex.VertexConsumer;
+          import net.minecraft.client.renderer.MultiBufferSource;
+          import net.minecraft.client.renderer.RenderType;
+          import net.minecraft.client.renderer.entity.EntityRendererProvider;
+          import net.minecraft.client.renderer.entity.MobRenderer;
+          import net.minecraft.client.renderer.texture.OverlayTexture;
+          import net.minecraft.resources.ResourceLocation;
+          import org.joml.Matrix3f;
+          import org.joml.Matrix4f;
+
+          public class JerryRenderer extends MobRenderer<JerryEntity, JerryModel<JerryEntity>> {
+              private static final ResourceLocation TEX_NORMAL = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/jerry_normal.png");
+              private static final ResourceLocation TEX_HAPPY = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/jerry_happy.png");
+              private static final ResourceLocation TEX_CREEPY = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/jerry_creepy.png");
+              private static final ResourceLocation TEX_SAD = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/jerry_sad.png");
+              private static final ResourceLocation TEX_SMILE = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/jerry_smile.png");
+              private static final ResourceLocation SPEAKER_TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/speaker_icon.png");
+
+              public JerryRenderer(EntityRendererProvider.Context ctx) {
+                  super(ctx, new JerryModel<>(ctx.bakeLayer(JerryModel.LAYER_LOCATION)), 0.5F);
+              }
+
+              @Override
+              public ResourceLocation getTextureLocation(JerryEntity entity) {
+                  return switch (entity.getFaceState()) {
+                      case JerryEntity.FACE_HAPPY -> TEX_HAPPY;
+                      case JerryEntity.FACE_CREEPY -> TEX_CREEPY;
+                      case JerryEntity.FACE_SAD -> TEX_SAD;
+                      case JerryEntity.FACE_SMILE -> TEX_SMILE;
+                      default -> TEX_NORMAL;
+                  };
+              }
+
+              @Override
+              public void render(JerryEntity entity, float yaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
+                  super.render(entity, yaw, partialTicks, poseStack, buffer, packedLight);
+                  if (entity.getSpeakerTimer() > 0) {
+                      poseStack.pushPose();
+                      poseStack.translate(0.0D, entity.getBbHeight() + 0.65D, 0.0D);
+                      poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
+                      Matrix4f mat = poseStack.last().pose();
+                      Matrix3f norm = poseStack.last().normal();
+                      VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(SPEAKER_TEX));
+                      float s = 0.35F;
+                      vc.vertex(mat, -s, -s, 0.0F).color(255, 255, 255, 255).uv(0.0F, 1.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat,  s, -s, 0.0F).color(255, 255, 255, 255).uv(1.0F, 1.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat,  s,  s, 0.0F).color(255, 255, 255, 255).uv(1.0F, 0.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat, -s,  s, 0.0F).color(255, 255, 255, 255).uv(0.0F, 0.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      poseStack.popPose();
+                  }
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/renderer/TomRenderer.java
+          package com.jerryhorror.mod.client.renderer;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.client.model.JerryModel;
+          import com.jerryhorror.mod.entity.TomEntity;
+          import net.minecraft.client.renderer.entity.EntityRendererProvider;
+          import net.minecraft.client.renderer.entity.MobRenderer;
+          import net.minecraft.resources.ResourceLocation;
+
+          public class TomRenderer extends MobRenderer<TomEntity, JerryModel<TomEntity>> {
+              private static final ResourceLocation TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/tom_normal.png");
+
+              public TomRenderer(EntityRendererProvider.Context ctx) {
+                  super(ctx, new JerryModel<>(ctx.bakeLayer(JerryModel.LAYER_LOCATION)), 0.5F);
+              }
+
+              @Override
+              public ResourceLocation getTextureLocation(TomEntity entity) {
+                  return TEX;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/renderer/DeadTomRenderer.java
+          package com.jerryhorror.mod.client.renderer;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.client.model.DeadTomModel;
+          import com.jerryhorror.mod.entity.DeadTomEntity;
+          import net.minecraft.client.renderer.entity.EntityRendererProvider;
+          import net.minecraft.client.renderer.entity.MobRenderer;
+          import net.minecraft.resources.ResourceLocation;
+
+          public class DeadTomRenderer extends MobRenderer<DeadTomEntity, DeadTomModel> {
+              private static final ResourceLocation TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/dead_tom.png");
+
+              public DeadTomRenderer(EntityRendererProvider.Context ctx) {
+                  super(ctx, new DeadTomModel(ctx.bakeLayer(DeadTomModel.LAYER_LOCATION)), 0.4F);
+              }
+
+              @Override
+              public ResourceLocation getTextureLocation(DeadTomEntity entity) {
+                  return TEX;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/renderer/ShadowDemonRenderer.java
+          package com.jerryhorror.mod.client.renderer;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.client.model.ShadowDemonModel;
+          import com.jerryhorror.mod.entity.ShadowDemonEntity;
+          import net.minecraft.client.renderer.entity.EntityRendererProvider;
+          import net.minecraft.client.renderer.entity.MobRenderer;
+          import net.minecraft.resources.ResourceLocation;
+
+          public class ShadowDemonRenderer extends MobRenderer<ShadowDemonEntity, ShadowDemonModel> {
+              private static final ResourceLocation TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/shadow_demon.png");
+
+              public ShadowDemonRenderer(EntityRendererProvider.Context ctx) {
+                  super(ctx, new ShadowDemonModel(ctx.bakeLayer(ShadowDemonModel.LAYER_LOCATION)), 0.6F);
+              }
+
+              @Override
+              public ResourceLocation getTextureLocation(ShadowDemonEntity entity) {
+                  return TEX;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/ClientModEvents.java
+          package com.jerryhorror.mod.client;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.client.model.DeadTomModel;
+          import com.jerryhorror.mod.client.model.JerryModel;
+          import com.jerryhorror.mod.client.model.ShadowDemonModel;
+          import com.jerryhorror.mod.client.renderer.DeadTomRenderer;
+          import com.jerryhorror.mod.client.renderer.JerryRenderer;
+          import com.jerryhorror.mod.client.renderer.ShadowDemonRenderer;
+          import com.jerryhorror.mod.client.renderer.TomRenderer;
+          import com.jerryhorror.mod.init.ModEntities;
+          import net.minecraftforge.api.distmarker.Dist;
+          import net.minecraftforge.client.event.EntityRenderersEvent;
+          import net.minecraftforge.eventbus.api.SubscribeEvent;
+          import net.minecraftforge.fml.common.Mod;
+
+          @Mod.EventBusSubscriber(modid = JerryHorrorMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+          public class ClientModEvents {
+              @SubscribeEvent
+              public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+                  event.registerEntityRenderer(ModEntities.JERRY.get(), JerryRenderer::new);
+                  event.registerEntityRenderer(ModEntities.TOM.get(), TomRenderer::new);
+                  event.registerEntityRenderer(ModEntities.DEAD_TOM.get(), DeadTomRenderer::new);
+                  event.registerEntityRenderer(ModEntities.SHADOW_DEMON.get(), ShadowDemonRenderer::new);
+              }
+
+              @SubscribeEvent
+              public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+                  event.registerLayerDefinition(JerryModel.LAYER_LOCATION, JerryModel::createBodyLayer);
+                  event.registerLayerDefinition(DeadTomModel.LAYER_LOCATION, DeadTomModel::createBodyLayer);
+                  event.registerLayerDefinition(ShadowDemonModel.LAYER_LOCATION, ShadowDemonModel::createBodyLayer);
+              }
+          }
+          EOF
+
+          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/ClientHudOverlay.java
+          package com.jerryhorror.mod.client;
+
+          import com.jerryhorror.mod.JerryHorrorMod;
+          import com.jerryhorror.mod.entity.JerryEntity;
+          import net.minecraft.client.Minecraft;
+          import net.minecraft.client.gui.GuiGraphics;
+          import net.minecraftforge.api.distmarker.Dist;
+          import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+          import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+          import net.minecraftforge.eventbus.api.SubscribeEvent;
+          import net.minecraftforge.fml.common.Mod;
+
+          @Mod.EventBusSubscriber(modid = JerryHorrorMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+          public class ClientHudOverlay {
+              @SubscribeEvent
+              public static void onRenderGui(RenderGuiOverlayEvent.Post event) {
+                  if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
+                  Minecraft mc = Minecraft.getInstance();
+                  if (mc.player == null || mc.level == null) return;
+                  boolean ending = !mc.level.getEntitiesOfClass(JerryEntity.class, mc.player.getBoundingBox().inflate(24.0D),
+                          j -> j.getAnimState() == JerryEntity.ANIM_THE_END).isEmpty();
+                  if (ending) {
+                      GuiGraphics gg = event.getGuiGraphics();
+                      int w = mc.getWindow().getGuiScaledWidth();
+                      int h = mc.getWindow().getGuiScaledHeight();
+                      gg.fill(0, 0, w, h, 0xFF000000);
+                      gg.drawCenteredString(mc.font, "THE END...?", w / 2, h / 2 - 4, 0xAAAAAA);
+                  }
+              }
+          }
+          EOF
+
+      - name: Compilar o Mod (.jar)
+        run: gradle build
+
+      - name: Disponibilizar o .jar para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: JerryHorrorMod-1.20.1-Forge
+          path: build/libs/jerryhorrormod-1.0.0.jar
+
+🎮 COMO JOGAR TODOS OS ACONTECIMENTOS DO VÍDEO NO MINECRAFT
+
+Depois de colocar o jerryhorrormod-1.0.0.jar na pasta mods do Minecraft 1.20.1
+Forge:
+
+  - Começar a história: Domestique qualquer lobo com osso OU digite /jerry
+    start.
+  - Comandos de voz (digite no chat para aparecer o ícone preto de alto-falante
+    em cima do Jerry):
+      - rolar (ou roll over) — Jerry dá uma cambalhota 360° no chão!
+      - flor / madeira / ferro — Jerry busca flor, madeira e ferro para você!
+      - por que tem sangue — Jerry trava e te encara com os olhos realistas
+        arregalados!
+      - abracar — Tom (coleira azul) abraça o Jerry com corações enquanto Jerry
+        o odeia!
+      - favorito — Jerry rosna de ciúmes quando você elogia o Tom!
+  - Avançar pelas 11 cenas exatas do vídeo: Use /jerry next ou pule direto para
+    qualquer cena com /jerry phase 1 até /jerry phase 11:
+    1.  Fase 1: Jerry amigável obedecendo comandos e fazendo truques.
+    2.  Fase 2: Poças de sangue surgem pela casa + olhos realistas encarando.
+    3.  Fase 3: Jerry te empurra na beira de penhascos/cavernas e esmaga ossos
+        na sua frente.
+    4.  Fase 4: Jerry rouba sua cama, marca território, e quando você tenta
+        dormir você acorda de madrugada vendo ele mexer nos seus baús.
+    5.  Fase 5: Amanhecer — Jerry sentado igual um humano na grama assistindo o
+        sol nascer.
+    6.  Fase 6: Adoção do Tom (coleira azul) e ciúmes do Jerry.
+    7.  Fase 7: Noite do assassinato — porta aberta, Tom morto numa poça de
+        sangue e Jerry fingindo dormir na cama com sangue embaixo. Clique no
+        Jerry (ele faz cara triste falsa) e clique com a pá no Tom para
+        enterrá-lo.
+    8.  Fase 8: Chuva no enterro, ataque de esqueletos e o túmulo do Tom cavado
+        e vazio.
+    9.  Fase 9: Trilha de sangue levando ao Bunker Subterrâneo (escada, grades
+        de ferro, velas e a Sala Vermelha do Ritual com o corpo do Tom no
+        centro).
+    10. Fase 10: A Entidade Sombria aparece na Sala do Ritual e te persegue até
+        o túnel de fuga de ardósia!
+    11. Fase 11 (Final): Você volta para casa e encontra o Jerry deitado na cama
+        sorrindo. Abra um baú (ou vire de costas) e olhe de volta: ele levanta
+        em duas patas na cama te encarando até a tela cortar para THE END...?!
+        (Use /jerry reset para sair da tela final.)
