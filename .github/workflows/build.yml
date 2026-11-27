@@ -8,7 +8,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar Python Pillow para gerar texturas HD
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar Pillow para gerar texturas HD
         run: pip install pillow
 
       - name: Configurar Java 17
@@ -17,10 +22,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Configurar Gradle 8.3
+      - name: Configurar Gradle 8.8
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.3'
+          gradle-version: '8.8'
 
       - name: Gerar todo o projeto do Mod e Texturas HD
         run: |
@@ -47,23 +52,21 @@ jobs:
                       name = 'MinecraftForge'
                       url = 'https://maven.minecraftforge.net/'
                   }
+                  mavenCentral()
               }
-          }
-          plugins {
-              id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
           }
           rootProject.name = 'jerryhorrormod'
           EOF
 
           cat << 'EOF' > gradle.properties
-          org.gradle.jvmargs=-Xmx3G
+          org.gradle.jvmargs=-Xmx4G
           org.gradle.daemon=false
           EOF
 
           cat << 'EOF' > build.gradle
           plugins {
               id 'java'
-              id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+              id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
           }
           version = '1.0.0'
           group = 'com.jerryhorror.mod'
@@ -71,11 +74,17 @@ jobs:
               archivesName = 'jerryhorrormod'
           }
           java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+          repositories {
+              mavenCentral()
+          }
           minecraft {
               mappings channel: 'official', version: '1.20.1'
           }
           dependencies {
               minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
+          }
+          tasks.withType(JavaCompile).configureEach {
+              options.encoding = 'UTF-8'
           }
           jar {
               manifest {
@@ -84,7 +93,7 @@ jobs:
                       "Specification-Vendor": "JerryHorror",
                       "Specification-Version": "1",
                       "Implementation-Title": project.name,
-                      "Implementation-Version": project.jar.archiveVersion,
+                      "Implementation-Version": project.version,
                       "Implementation-Vendor": "JerryHorror"
                   ])
               }
@@ -239,20 +248,15 @@ jobs:
                       b = max(0, min(255, 208 + n))
                       px[x, y] = (r, g, b, 255)
               d = ImageDraw.Draw(img)
-              # Snout (texOffs 0,10, size 3x3x4 -> 4x HD: x 0..56, y 40..68)
               d.rectangle([0, 40, 56, 68], fill=(176, 152, 128, 255))
-              # Nose tip front (x 16..28, y 56..68)
               d.rectangle([16, 56, 28, 68], fill=(165, 140, 118, 255))
               d.rectangle([19, 57, 25, 62], fill=(20, 18, 18, 255))
               d.rectangle([16, 64, 28, 66], fill=(45, 38, 35, 255))
-              # Ears (texOffs 16,14 -> x 64..88, y 56..68)
               d.rectangle([64, 56, 88, 68], fill=(155, 148, 140, 255))
               d.rectangle([68, 60, 74, 67], fill=(95, 88, 82, 255))
-              # Collar (texOffs 42,0, size 8x6x2 -> 4x HD: x 168..248, y 0..32)
               d.rectangle([168, 0, 255, 36], fill=(collar_rgb[0], collar_rgb[1], collar_rgb[2], 255))
               for cx in range(168, 255, 4):
                   d.line([(cx, 0), (cx, 36)], fill=(max(0, collar_rgb[0]-20), max(0, collar_rgb[1]-10), max(0, collar_rgb[2]-10), 255))
-              # Mane shading
               for y in range(0, 52):
                   for x in range(84, 168):
                       r, g, b, a = px[x, y]
@@ -276,7 +280,6 @@ jobs:
 
           def draw_normal_eyes(img):
               d = ImageDraw.Draw(img)
-              # Face front: x 16..40, y 16..40
               d.rectangle([18, 26, 22, 30], fill=(255, 255, 255, 255))
               d.rectangle([20, 26, 23, 30], fill=(15, 15, 15, 255))
               d.rectangle([34, 26, 38, 30], fill=(255, 255, 255, 255))
@@ -293,7 +296,6 @@ jobs:
 
           def draw_creepy_eyes(img):
               d = ImageDraw.Draw(img)
-              # Wide photorealistic staring eyes like 03:16
               for cx in (21, 35):
                   d.ellipse([cx-5, 22, cx+5, 32], fill=(65, 58, 55, 255))
                   d.ellipse([cx-4, 23, cx+4, 31], fill=(248, 248, 245, 255))
@@ -315,11 +317,9 @@ jobs:
           def draw_smile_face(img):
               draw_creepy_eyes(img)
               d = ImageDraw.Draw(img)
-              # Creepy wide grin across lower face and snout like 16:52
               d.arc([16, 29, 40, 39], start=10, end=170, fill=(10, 5, 5, 255), width=3)
               for tx in range(19, 38, 3):
                   d.line([(tx, 34), (tx, 37)], fill=(245, 245, 235, 255), width=1)
-              # Grin on snout front too
               d.rectangle([16, 62, 28, 67], fill=(15, 8, 8, 255))
               for tx in range(17, 28, 2):
                   d.rectangle([tx, 63, tx, 66], fill=(245, 245, 235, 255))
@@ -342,18 +342,15 @@ jobs:
           dt.ellipse([32, 25, 38, 31], fill=(35, 5, 5, 255))
           dead_tom.save(f"{out_e}/dead_tom.png")
 
-          # Shadow Demon (64x64)
           sh = Image.new("RGBA", (64, 64), (7, 3, 5, 255))
           sd = ImageDraw.Draw(sh)
           for _ in range(120):
               sx, sy = random.randint(0, 63), random.randint(0, 63)
               sd.point((sx, sy), fill=(random.randint(15, 45), 0, 2, 255))
-          # Glowing faint red eyes on head front (8..16, 8..16)
           sd.rectangle([9, 11, 11, 12], fill=(220, 15, 15, 255))
           sd.rectangle([13, 11, 15, 12], fill=(220, 15, 15, 255))
           sh.save(f"{out_e}/shadow_demon.png")
 
-          # Speaker Icon (64x64 transparent)
           sp = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
           spd = ImageDraw.Draw(sp)
           spd.rectangle([10, 23, 22, 41], fill=(10, 10, 10, 255))
@@ -362,7 +359,6 @@ jobs:
           spd.arc([38, 10, 60, 54], start=300, end=60, fill=(10, 10, 10, 255), width=4)
           sp.save(f"{out_e}/speaker_icon.png")
 
-          # Blood Puddle (64x64 transparent)
           bp = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
           bpd = ImageDraw.Draw(bp)
           bpd.ellipse([14, 16, 50, 48], fill=(165, 5, 5, 240))
@@ -376,7 +372,6 @@ jobs:
               bpd.ellipse([ex-3, ey-3, ex+3, ey+3], fill=(185, 10, 10, 230))
           bp.save(f"{out_b}/blood_puddle.png")
 
-          # Ritual Floor (64x64 glowing crimson with dark occult runes like 15:57)
           rf = Image.new("RGBA", (64, 64), (205, 12, 12, 255))
           rfd = ImageDraw.Draw(rf)
           rfd.rectangle([2, 2, 61, 61], outline=(25, 0, 0, 255), width=4)
@@ -386,7 +381,7 @@ jobs:
           rfd.line([(32, 0), (32, 63)], fill=(30, 0, 0, 255), width=2)
           rfd.rectangle([26, 26, 37, 37], fill=(245, 30, 20, 255), outline=(15, 0, 0, 255), width=2)
           rf.save(f"{out_b}/ritual_floor.png")
-          print("Todas as texturas HD foram geradas com sucesso!")
+          print("Texturas HD geradas com sucesso!")
           EOF
 
           python3 generate_textures.py
@@ -433,14 +428,14 @@ jobs:
 
               private void addCreative(BuildCreativeModeTabContentsEvent event) {
                   if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
-                      event.accept(ModItems.JERRY_SPAWN_EGG);
-                      event.accept(ModItems.TOM_SPAWN_EGG);
-                      event.accept(ModItems.DEAD_TOM_SPAWN_EGG);
-                      event.accept(ModItems.SHADOW_DEMON_SPAWN_EGG);
+                      event.accept(ModItems.JERRY_SPAWN_EGG.get());
+                      event.accept(ModItems.TOM_SPAWN_EGG.get());
+                      event.accept(ModItems.DEAD_TOM_SPAWN_EGG.get());
+                      event.accept(ModItems.SHADOW_DEMON_SPAWN_EGG.get());
                   }
                   if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-                      event.accept(ModItems.BLOOD_PUDDLE_ITEM);
-                      event.accept(ModItems.RITUAL_FLOOR_ITEM);
+                      event.accept(ModItems.BLOOD_PUDDLE_ITEM.get());
+                      event.accept(ModItems.RITUAL_FLOOR_ITEM.get());
                   }
               }
           }
@@ -496,7 +491,7 @@ jobs:
 
               public static final RegistryObject<Block> RITUAL_FLOOR = BLOCKS.register("ritual_floor",
                       () -> new Block(BlockBehaviour.Properties.of()
-                              .mapColor(MapColor.NETHER)
+                              .mapColor(MapColor.COLOR_RED)
                               .strength(3.0F)
                               .lightLevel(s -> 12)
                               .sound(SoundType.STONE)));
@@ -695,14 +690,12 @@ jobs:
 
                       Player nearest = this.level().getNearestPlayer(this, 24.0D);
                       if (nearest != null) {
-                          // Seguir o jogador apenas na Fase 1 (quando nao esta sentado/fazendo truque)
                           if (StoryManager.currentPhase <= 1 && !isJerrySitting() && anim == ANIM_NORMAL) {
                               if (this.distanceTo(nearest) > 4.5D) {
                                   this.getNavigation().moveTo(nearest, 1.15D);
                               }
                           }
 
-                          // Fase 3: Empurrar o jogador na beira de penhasco/caverna
                           if (StoryManager.currentPhase == 3 && pushCooldown == 0 && this.distanceTo(nearest) < 2.6D) {
                               Vec3 push = nearest.position().subtract(this.position()).normalize().scale(1.35D);
                               nearest.setDeltaMovement(push.x, 0.42D, push.z);
@@ -714,7 +707,6 @@ jobs:
                               pushCooldown = 140;
                           }
 
-                          // Fase 11: Quando Jerry fica em pe na cama encarando o jogador -> THE END...?
                           if (anim == ANIM_STAND_UPRIGHT) {
                               this.getLookControl().setLookAt(nearest, 30.0F, 30.0F);
                               this.setDeltaMovement(Vec3.ZERO);
@@ -726,11 +718,11 @@ jobs:
                                   if (endStareTimer >= 65) {
                                       setAnimState(ANIM_THE_END);
                                       this.playSound(SoundEvents.WARDEN_SONIC_BOOM, 1.5F, 0.4F);
+                                      nearest.sendSystemMessage(Component.literal("§4§lTHE END."));
                                   }
                               }
                           }
 
-                          // Travar movimento nas poses cinematograficas
                           if (anim == ANIM_SLEEP_BED || anim == ANIM_HUMAN_SIT || anim == ANIM_DIG_CHEST || anim == ANIM_THE_END) {
                               this.getNavigation().stop();
                               this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
@@ -745,7 +737,6 @@ jobs:
                       ItemStack stack = player.getItemInHand(hand);
                       if (stack.is(Items.BONE)) {
                           if (StoryManager.currentPhase == 3) {
-                              // Jerry esmaga o osso agressivamente como em 05:10
                               stack.shrink(1);
                               this.playSound(SoundEvents.SKELETON_HURT, 1.2F, 0.6F);
                               if (this.level() instanceof ServerLevel sl) {
@@ -1051,7 +1042,6 @@ jobs:
               public static BlockPos lastRitualCenter = null;
 
               public static BlockPos buildBunker(ServerLevel level, BlockPos entrance) {
-                  // Entrada do bunker (15:25)
                   for (int dx = -1; dx <= 1; dx++) {
                       level.setBlock(entrance.offset(dx, 0, -1), Blocks.COBBLESTONE.defaultBlockState(), 3);
                       level.setBlock(entrance.offset(dx, 1, -1), Blocks.COBBLESTONE.defaultBlockState(), 3);
@@ -1059,7 +1049,6 @@ jobs:
                   level.setBlock(entrance.above(), Blocks.COBBLESTONE_SLAB.defaultBlockState(), 3);
                   level.setBlock(entrance, Blocks.DARK_OAK_TRAPDOOR.defaultBlockState(), 3);
 
-                  // Escada descendo 10 blocos para o Sul (+Z)
                   for (int i = 1; i <= 10; i++) {
                       BlockPos step = entrance.offset(0, -i, i);
                       for (int dx = -1; dx <= 1; dx++) {
@@ -1072,7 +1061,6 @@ jobs:
                       level.setBlock(step, Blocks.OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH), 3);
                   }
 
-                  // Corredor com grades de ferro e velas (15:47)
                   BlockPos hallStart = entrance.offset(0, -10, 11);
                   for (int z = 0; z < 8; z++) {
                       for (int x = -2; x <= 2; x++) {
@@ -1093,12 +1081,10 @@ jobs:
                       }
                   }
 
-                  // Porta para a sala do ritual (15:55)
                   BlockPos doorPos = hallStart.offset(0, 0, 8);
                   level.setBlock(doorPos, Blocks.SPRUCE_DOOR.defaultBlockState().setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 3);
                   level.setBlock(doorPos.above(), Blocks.SPRUCE_DOOR.defaultBlockState().setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 3);
 
-                  // Sala do Ritual Vermelha 11x6x11 (15:57)
                   BlockPos roomCenter = hallStart.offset(0, 0, 14);
                   lastRitualCenter = roomCenter;
                   for (int x = -5; x <= 5; x++) {
@@ -1118,7 +1104,6 @@ jobs:
                       }
                   }
 
-                  // Pilares vermelhos e teias de aranha
                   int[][] pillars = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}};
                   for (int[] c : pillars) {
                       for (int y = 0; y <= 4; y++) {
@@ -1128,7 +1113,6 @@ jobs:
                   }
                   level.setBlock(roomCenter.offset(0, 4, 0), Blocks.COBWEB.defaultBlockState(), 3);
 
-                  // Altar central com sangue e corpo do Tom
                   for (int x = -1; x <= 1; x++) {
                       for (int z = -1; z <= 1; z++) {
                           level.setBlock(roomCenter.offset(x, 0, z), ModBlocks.BLOOD_PUDDLE.get().defaultBlockState(), 3);
@@ -1140,7 +1124,6 @@ jobs:
                       level.addFreshEntity(deadTom);
                   }
 
-                  // Tunel de fuga de Ardosia Profunda subindo de volta para a superficie (16:22)
                   BlockPos escapeStart = roomCenter.offset(0, 0, 6);
                   for (int z = 0; z < 6; z++) {
                       for (int x = -1; x <= 1; x++) {
@@ -1214,6 +1197,7 @@ jobs:
               public static BlockPos lastGravePos = null;
               public static boolean demonSpawned = false;
               private static int phaseTimer = 0;
+              private static int sleepTicks = 0;
 
               @SubscribeEvent
               public void onRegisterCommands(RegisterCommandsEvent event) {
@@ -1262,7 +1246,6 @@ jobs:
                           })));
               }
 
-              // Domesticar lobo vanilla com osso transforma ele no Jerry (ou no Tom na Fase 6+)
               @SubscribeEvent
               public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
                   if (event.getLevel().isClientSide) return;
@@ -1285,7 +1268,6 @@ jobs:
                   }
               }
 
-              // Reconhecimento de voz via Chat (Portugues e Ingles) com icone de alto-falante
               @SubscribeEvent
               public void onChat(ServerChatEvent event) {
                   ServerPlayer sp = event.getPlayer();
@@ -1347,7 +1329,6 @@ jobs:
                   }
               }
 
-              // Fase 11: Quando o jogador abre um bau enquanto Jerry esta sorrindo na cama -> Jerry levanta em 2 patas!
               @SubscribeEvent
               public void onContainerOpen(PlayerContainerEvent.Open event) {
                   if (event.getEntity() instanceof ServerPlayer sp && currentPhase == 11) {
@@ -1367,33 +1348,37 @@ jobs:
                   ServerLevel sl = sp.serverLevel();
                   phaseTimer++;
 
-                  // Detectar quando o jogador deita na cama (Fases 4 e 7 acordam no meio da noite!)
-                  if (sp.isSleeping() && sp.getSleepTimer() >= 35) {
-                      lastBedPos = sp.blockPosition();
-                      if (currentPhase == 4) {
-                          sp.stopSleeping();
-                          sl.setDayTime(18000);
-                          sl.playSound(null, sp.blockPosition(), SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 1.2F, 0.7F);
-                          JerryEntity jerry = findJerry(sl, sp.blockPosition());
-                          if (jerry != null) {
-                              BlockPos chestPos = findNearestBlock(sl, sp.blockPosition(), 12, ChestBlock.class);
-                              if (chestPos != null) {
-                                  jerry.teleportTo(chestPos.getX() + 0.5D, chestPos.getY(), chestPos.getZ() + 1.2D);
-                                  jerry.setAnimState(JerryEntity.ANIM_DIG_CHEST);
-                              } else {
-                                  jerry.setAnimState(JerryEntity.ANIM_MARK_TERRITORY);
+                  if (sp.isSleeping()) {
+                      sleepTicks++;
+                      if (sleepTicks >= 35) {
+                          sleepTicks = 0;
+                          lastBedPos = sp.blockPosition();
+                          if (currentPhase == 4) {
+                              sp.stopSleepInBed(true, true);
+                              sl.setDayTime(18000);
+                              sl.playSound(null, sp.blockPosition(), SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 1.2F, 0.7F);
+                              JerryEntity jerry = findJerry(sl, sp.blockPosition());
+                              if (jerry != null) {
+                                  BlockPos chestPos = findNearestBlock(sl, sp.blockPosition(), 12, ChestBlock.class);
+                                  if (chestPos != null) {
+                                      jerry.teleportTo(chestPos.getX() + 0.5D, chestPos.getY(), chestPos.getZ() + 1.2D);
+                                      jerry.setAnimState(JerryEntity.ANIM_DIG_CHEST);
+                                  } else {
+                                      jerry.setAnimState(JerryEntity.ANIM_MARK_TERRITORY);
+                                  }
+                                  jerry.setFaceState(JerryEntity.FACE_CREEPY);
                               }
-                              jerry.setFaceState(JerryEntity.FACE_CREEPY);
+                              sp.sendSystemMessage(Component.literal("§cVoce acordou no meio da noite com barulhos estranhos na casa..."));
+                          } else if (currentPhase == 7) {
+                              sp.stopSleepInBed(true, true);
+                              sl.setDayTime(18500);
+                              triggerTomMurderScene(sl, sp);
                           }
-                          sp.sendSystemMessage(Component.literal("§cVoce acordou no meio da noite com barulhos estranhos na casa..."));
-                      } else if (currentPhase == 7) {
-                          sp.stopSleeping();
-                          sl.setDayTime(18500);
-                          triggerTomMurderScene(sl, sp);
                       }
+                  } else {
+                      sleepTicks = 0;
                   }
 
-                  // Fase 9/10: Se jogador entrar na sala do ritual -> Spawna Entidade Sombria!
                   if ((currentPhase == 9 || currentPhase == 10) && BunkerBuilder.lastRitualCenter != null && !demonSpawned) {
                       if (sp.blockPosition().distSqr(BunkerBuilder.lastRitualCenter) < 30.0D) {
                           currentPhase = 10;
@@ -1409,7 +1394,6 @@ jobs:
                       }
                   }
 
-                  // Se o jogador escapou da sala do ritual para a superficie na Fase 10 -> Inicia Fase 11 (Final)!
                   if (currentPhase == 10 && demonSpawned && BunkerBuilder.lastRitualCenter != null) {
                       if (sp.blockPosition().getY() >= BunkerBuilder.lastRitualCenter.getY() + 9) {
                           List<ShadowDemonEntity> demons = sl.getEntitiesOfClass(ShadowDemonEntity.class, new AABB(sp.blockPosition()).inflate(64));
@@ -1418,7 +1402,6 @@ jobs:
                       }
                   }
 
-                  // Fase 11: Se jogador nao tem bau, olhar para longe por 4 segundos tambem faz Jerry levantar em 2 patas
                   if (currentPhase == 11 && phaseTimer % 40 == 0) {
                       JerryEntity jerry = findJerry(sl, sp.blockPosition());
                       if (jerry != null && jerry.getAnimState() == JerryEntity.ANIM_SLEEP_BED && jerry.distanceTo(sp) < 12.0D) {
@@ -1441,14 +1424,12 @@ jobs:
 
                   switch (phase) {
                       case 1 -> {
-                          // 00:00 - 02:35: Fase amigavel (truques, coletar madeira/flor/ferro)
                           jerry.setFaceState(JerryEntity.FACE_HAPPY);
                           jerry.setAnimState(JerryEntity.ANIM_NORMAL);
                           sp.getInventory().add(new ItemStack(Items.BONE, 8));
-                          sp.sendSystemMessage(Component.literal("§a[Fase 1] Jerry e seu melhor amigo! Digite no chat: 'rolar', 'flor', 'madeira', 'ferro'. (Use /jerry next para avancar a historia)"));
+                          sp.sendSystemMessage(Component.literal("§a[Fase 1] Jerry e seu melhor amigo! Digite no chat: 'rolar', 'flor', 'madeira', 'ferro'. (Use /jerry next para avancar)"));
                       }
                       case 2 -> {
-                          // 02:55 - 03:35: Pocas de sangue na casa + olhos realistas encarando
                           BlockPos center = sp.blockPosition();
                           for (int i = 0; i < 6; i++) {
                               BlockPos bp = center.offset(sl.random.nextInt(7) - 3, 0, sl.random.nextInt(7) - 3);
@@ -1462,14 +1443,12 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§c[Fase 2] Por que tem tanto sangue espalhado por aqui?! Pergunte 'por que tem sangue' no chat..."));
                       }
                       case 3 -> {
-                          // 04:20 - 05:25: Empurrar no penhasco + esmagar osso agressivamente
                           jerry.setFaceState(JerryEntity.FACE_CREEPY);
                           jerry.setAnimState(JerryEntity.ANIM_NORMAL);
                           sp.getInventory().add(new ItemStack(Items.BONE, 3));
                           sp.sendSystemMessage(Component.literal("§c[Fase 3] Jerry esta estranho... Chegue perto dele (ele vai te empurrar!) ou tente dar um osso para ele."));
                       }
                       case 4 -> {
-                          // 05:50 - 07:45: Jerry toma sua cama, marca territorio e mexe nos baus a noite
                           BlockPos bed = findNearestBlock(sl, sp.blockPosition(), 16, BedBlock.class);
                           if (bed != null) {
                               lastBedPos = bed;
@@ -1481,7 +1460,6 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§c[Fase 4] Jerry deitou na sua cama! Clique nele ou tente dormir na cama..."));
                       }
                       case 5 -> {
-                          // 07:50 - 09:00: Nascer do sol - Jerry sentado igual humano na colina
                           sl.setDayTime(23150);
                           BlockPos hill = sp.blockPosition().offset(6, 0, 6);
                           jerry.teleportTo(hill.getX() + 0.5D, sp.getY(), hill.getZ() + 0.5D);
@@ -1491,7 +1469,6 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§c[Fase 5] O sol esta nascendo... Olhe como o Jerry esta sentado la fora."));
                       }
                       case 6 -> {
-                          // 09:10 - 11:30: Adotando o Tom (coleira azul) e ciumes do Jerry
                           jerry.setAnimState(JerryEntity.ANIM_NORMAL);
                           jerry.setFaceState(JerryEntity.FACE_CREEPY);
                           if (findTom(sl, sp.blockPosition()) == null) {
@@ -1500,12 +1477,10 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§b[Fase 6] Voce adotou o Tom (coleira azul)! Diga 'abracar' ou 'favorito' no chat para ver a reacao do Jerry..."));
                       }
                       case 7 -> {
-                          // 11:45 - 13:30: Noite do assassinato do Tom!
                           sl.setDayTime(14000);
                           triggerTomMurderScene(sl, sp);
                       }
                       case 8 -> {
-                          // 13:35 - 15:00: Enterro na chuva + invasao de esqueletos + cova violada!
                           sl.setWeatherParameters(0, 6000, true, false);
                           sl.setDayTime(16000);
                           for (int i = 0; i < 3; i++) {
@@ -1523,7 +1498,6 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§4[Fase 8] Esqueletos atacaram! E o tumulo do Tom foi CAVADO E ESTA VAZIO..."));
                       }
                       case 9 -> {
-                          // 15:10 - 16:05: Trilha de sangue levando ao Bunker Subterraneo + Sala do Ritual
                           demonSpawned = false;
                           BlockPos entrance = sp.blockPosition().offset(0, 0, 6);
                           for (int z = 1; z <= 5; z++) {
@@ -1536,7 +1510,6 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§4[Fase 9] Siga a trilha de sangue ate a entrada secreta do Bunker subterraneo..."));
                       }
                       case 10 -> {
-                          // 16:10 - 16:40: Entidade Sombria na Sala do Ritual!
                           if (BunkerBuilder.lastRitualCenter == null) {
                               BunkerBuilder.buildBunker(sl, sp.blockPosition().offset(0, 0, 6));
                           }
@@ -1550,7 +1523,6 @@ jobs:
                           sp.sendSystemMessage(Component.literal("§4§l[Fase 10] A ENTIDADE SOMBRIA ESTA TE PERSEGUINDO! FUJA PARA A SUPERFICIE!"));
                       }
                       case 11 -> {
-                          // 16:45 - 17:25: Final - Jerry sorrindo na cama -> Levanta em 2 patas -> THE END...?
                           BlockPos bed = findNearestBlock(sl, sp.blockPosition(), 24, BedBlock.class);
                           if (bed != null) {
                               jerry.teleportTo(bed.getX() + 0.5D, bed.getY() + 0.6D, bed.getZ() + 0.5D);
@@ -1570,7 +1542,6 @@ jobs:
                   BlockPos deathPos = (tom != null) ? tom.blockPosition() : sp.blockPosition().offset(5, 0, 0);
                   if (tom != null) tom.discard();
 
-                  // Abrir porta proxima
                   BlockPos door = findNearestBlock(sl, sp.blockPosition(), 14, DoorBlock.class);
                   if (door != null) {
                       BlockState ds = sl.getBlockState(door);
@@ -1579,7 +1550,6 @@ jobs:
                       }
                   }
 
-                  // Pocas de sangue + Tom Morto
                   for (int dx = -1; dx <= 1; dx++) {
                       for (int dz = -1; dz <= 1; dz++) {
                           BlockPos bp = deathPos.offset(dx, 0, dz);
@@ -1594,7 +1564,6 @@ jobs:
                       sl.addFreshEntity(deadTom);
                   }
 
-                  // Jerry fingindo dormir na cama com sangue embaixo!
                   JerryEntity jerry = findJerry(sl, sp.blockPosition());
                   if (jerry != null) {
                       BlockPos bed = findNearestBlock(sl, sp.blockPosition(), 16, BedBlock.class);
@@ -1765,25 +1734,24 @@ jobs:
                   return LayerDefinition.create(mesh, 64, 32);
               }
 
+              private static void pos(ModelPart p, float x, float y, float z) {
+                  p.x = x; p.y = y; p.z = z;
+              }
+
+              private static void rot(ModelPart p, float xr, float yr, float zr) {
+                  p.xRot = xr; p.yRot = yr; p.zRot = zr;
+              }
+
               private void resetPose() {
-                  root.setPos(0.0F, 16.0F, 0.0F);
-                  root.setRotation(0.0F, 0.0F, 0.0F);
-                  head.setPos(0.0F, -2.5F, -7.0F);
-                  head.setRotation(0.0F, 0.0F, 0.0F);
-                  upperBody.setPos(0.0F, -2.0F, -3.0F);
-                  upperBody.setRotation(0.0F, 0.0F, 0.0F);
-                  body.setPos(0.0F, -2.0F, 2.0F);
-                  body.setRotation(0.0F, 0.0F, 0.0F);
-                  leg0.setPos(-1.5F, 0.0F, 7.0F);
-                  leg0.setRotation(0.0F, 0.0F, 0.0F);
-                  leg1.setPos(1.5F, 0.0F, 7.0F);
-                  leg1.setRotation(0.0F, 0.0F, 0.0F);
-                  leg2.setPos(-1.5F, 0.0F, -4.0F);
-                  leg2.setRotation(0.0F, 0.0F, 0.0F);
-                  leg3.setPos(1.5F, 0.0F, -4.0F);
-                  leg3.setRotation(0.0F, 0.0F, 0.0F);
-                  tail.setPos(0.0F, -3.0F, 8.5F);
-                  tail.setRotation(0.55F, 0.0F, 0.0F);
+                  pos(root, 0.0F, 16.0F, 0.0F); rot(root, 0.0F, 0.0F, 0.0F);
+                  pos(head, 0.0F, -2.5F, -7.0F); rot(head, 0.0F, 0.0F, 0.0F);
+                  pos(upperBody, 0.0F, -2.0F, -3.0F); rot(upperBody, 0.0F, 0.0F, 0.0F);
+                  pos(body, 0.0F, -2.0F, 2.0F); rot(body, 0.0F, 0.0F, 0.0F);
+                  pos(leg0, -1.5F, 0.0F, 7.0F); rot(leg0, 0.0F, 0.0F, 0.0F);
+                  pos(leg1, 1.5F, 0.0F, 7.0F); rot(leg1, 0.0F, 0.0F, 0.0F);
+                  pos(leg2, -1.5F, 0.0F, -4.0F); rot(leg2, 0.0F, 0.0F, 0.0F);
+                  pos(leg3, 1.5F, 0.0F, -4.0F); rot(leg3, 0.0F, 0.0F, 0.0F);
+                  pos(tail, 0.0F, -3.0F, 8.5F); rot(tail, 0.55F, 0.0F, 0.0F);
               }
 
               @Override
@@ -1836,39 +1804,37 @@ jobs:
                           leg3.xRot = -1.1F - Mth.sin(ageInTicks * 0.9F) * 0.55F;
                       }
                       case JerryEntity.ANIM_HUMAN_SIT -> {
-                          // Sentado igual humano vendo o sol nascer (08:11)
                           root.y = 20.5F;
                           body.xRot = 1.57F;
-                          body.setPos(0.0F, -2.0F, 0.0F);
+                          pos(body, 0.0F, -2.0F, 0.0F);
                           upperBody.xRot = 1.57F;
-                          upperBody.setPos(0.0F, -8.0F, 0.0F);
-                          head.setPos(0.0F, -13.5F, 0.0F);
-                          leg0.setPos(-1.8F, 1.5F, -1.0F);
-                          leg0.setRotation(-1.55F, 0.0F, 0.45F);
-                          leg1.setPos(1.8F, 1.5F, -1.0F);
-                          leg1.setRotation(-1.55F, 0.0F, -0.45F);
-                          leg2.setPos(-3.8F, -8.0F, -1.5F);
-                          leg2.setRotation(-0.35F, 0.0F, 0.25F);
-                          leg3.setPos(3.8F, -8.0F, -1.5F);
-                          leg3.setRotation(-0.35F, 0.0F, -0.25F);
-                          tail.setPos(0.0F, 1.5F, 2.5F);
+                          pos(upperBody, 0.0F, -8.0F, 0.0F);
+                          pos(head, 0.0F, -13.5F, 0.0F);
+                          pos(leg0, -1.8F, 1.5F, -1.0F);
+                          rot(leg0, -1.55F, 0.0F, 0.45F);
+                          pos(leg1, 1.8F, 1.5F, -1.0F);
+                          rot(leg1, -1.55F, 0.0F, -0.45F);
+                          pos(leg2, -3.8F, -8.0F, -1.5F);
+                          rot(leg2, -0.35F, 0.0F, 0.25F);
+                          pos(leg3, 3.8F, -8.0F, -1.5F);
+                          rot(leg3, -0.35F, 0.0F, -0.25F);
+                          pos(tail, 0.0F, 1.5F, 2.5F);
                           tail.xRot = 1.4F;
                       }
                       case JerryEntity.ANIM_STAND_UPRIGHT, JerryEntity.ANIM_THE_END -> {
-                          // Em pe sobre duas patas na cama (17:15)
                           root.y = 16.0F;
-                          leg0.setPos(-1.8F, 0.0F, 0.0F);
-                          leg1.setPos(1.8F, 0.0F, 0.0F);
+                          pos(leg0, -1.8F, 0.0F, 0.0F);
+                          pos(leg1, 1.8F, 0.0F, 0.0F);
                           body.xRot = 1.57F;
-                          body.setPos(0.0F, -4.0F, 0.0F);
+                          pos(body, 0.0F, -4.0F, 0.0F);
                           upperBody.xRot = 1.57F;
-                          upperBody.setPos(0.0F, -10.5F, 0.0F);
-                          head.setPos(0.0F, -16.0F, 0.0F);
-                          leg2.setPos(-4.5F, -10.5F, 0.0F);
-                          leg2.setRotation(0.05F, 0.0F, 0.1F);
-                          leg3.setPos(4.5F, -10.5F, 0.0F);
-                          leg3.setRotation(0.05F, 0.0F, -0.1F);
-                          tail.setPos(0.0F, 1.0F, 2.0F);
+                          pos(upperBody, 0.0F, -10.5F, 0.0F);
+                          pos(head, 0.0F, -16.0F, 0.0F);
+                          pos(leg2, -4.5F, -10.5F, 0.0F);
+                          rot(leg2, 0.05F, 0.0F, 0.1F);
+                          pos(leg3, 4.5F, -10.5F, 0.0F);
+                          rot(leg3, 0.05F, 0.0F, -0.1F);
+                          pos(tail, 0.0F, 1.0F, 2.0F);
                           tail.xRot = 0.65F;
                       }
                       default -> {
@@ -2045,6 +2011,7 @@ jobs:
           import com.jerryhorror.mod.entity.JerryEntity;
           import com.mojang.blaze3d.vertex.PoseStack;
           import com.mojang.blaze3d.vertex.VertexConsumer;
+          import net.minecraft.client.renderer.LightTexture;
           import net.minecraft.client.renderer.MultiBufferSource;
           import net.minecraft.client.renderer.RenderType;
           import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -2084,14 +2051,15 @@ jobs:
                       poseStack.pushPose();
                       poseStack.translate(0.0D, entity.getBbHeight() + 0.65D, 0.0D);
                       poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
-                      Matrix4f mat = poseStack.last().pose();
-                      Matrix3f norm = poseStack.last().normal();
+                      poseStack.scale(0.5F, 0.5F, 0.5F);
+                      PoseStack.Pose last = poseStack.last();
+                      Matrix4f mat = last.pose();
+                      Matrix3f norm = last.normal();
                       VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(SPEAKER_TEX));
-                      float s = 0.35F;
-                      vc.vertex(mat, -s, -s, 0.0F).color(255, 255, 255, 255).uv(0.0F, 1.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
-                      vc.vertex(mat,  s, -s, 0.0F).color(255, 255, 255, 255).uv(1.0F, 1.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
-                      vc.vertex(mat,  s,  s, 0.0F).color(255, 255, 255, 255).uv(1.0F, 0.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
-                      vc.vertex(mat, -s,  s, 0.0F).color(255, 255, 255, 255).uv(0.0F, 0.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat, -0.5F, -0.5F, 0.0F).color(255, 255, 255, 255).uv(0.0F, 1.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat,  0.5F, -0.5F, 0.0F).color(255, 255, 255, 255).uv(1.0F, 1.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat,  0.5F,  0.5F, 0.0F).color(255, 255, 255, 255).uv(1.0F, 0.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
+                      vc.vertex(mat, -0.5F,  0.5F, 0.0F).color(255, 255, 255, 255).uv(0.0F, 0.0F).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(norm, 0.0F, 1.0F, 0.0F).endVertex();
                       poseStack.popPose();
                   }
               }
@@ -2109,7 +2077,7 @@ jobs:
           import net.minecraft.resources.ResourceLocation;
 
           public class TomRenderer extends MobRenderer<TomEntity, JerryModel<TomEntity>> {
-              private static final ResourceLocation TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/tom_normal.png");
+              private static final ResourceLocation TEXTURE = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/tom_normal.png");
 
               public TomRenderer(EntityRendererProvider.Context ctx) {
                   super(ctx, new JerryModel<>(ctx.bakeLayer(JerryModel.LAYER_LOCATION)), 0.5F);
@@ -2117,7 +2085,7 @@ jobs:
 
               @Override
               public ResourceLocation getTextureLocation(TomEntity entity) {
-                  return TEX;
+                  return TEXTURE;
               }
           }
           EOF
@@ -2133,7 +2101,7 @@ jobs:
           import net.minecraft.resources.ResourceLocation;
 
           public class DeadTomRenderer extends MobRenderer<DeadTomEntity, DeadTomModel> {
-              private static final ResourceLocation TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/dead_tom.png");
+              private static final ResourceLocation TEXTURE = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/dead_tom.png");
 
               public DeadTomRenderer(EntityRendererProvider.Context ctx) {
                   super(ctx, new DeadTomModel(ctx.bakeLayer(DeadTomModel.LAYER_LOCATION)), 0.4F);
@@ -2141,7 +2109,7 @@ jobs:
 
               @Override
               public ResourceLocation getTextureLocation(DeadTomEntity entity) {
-                  return TEX;
+                  return TEXTURE;
               }
           }
           EOF
@@ -2157,15 +2125,15 @@ jobs:
           import net.minecraft.resources.ResourceLocation;
 
           public class ShadowDemonRenderer extends MobRenderer<ShadowDemonEntity, ShadowDemonModel> {
-              private static final ResourceLocation TEX = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/shadow_demon.png");
+              private static final ResourceLocation TEXTURE = new ResourceLocation(JerryHorrorMod.MODID, "textures/entity/shadow_demon.png");
 
               public ShadowDemonRenderer(EntityRendererProvider.Context ctx) {
-                  super(ctx, new ShadowDemonModel(ctx.bakeLayer(ShadowDemonModel.LAYER_LOCATION)), 0.6F);
+                  super(ctx, new ShadowDemonModel(ctx.bakeLayer(ShadowDemonModel.LAYER_LOCATION)), 0.5F);
               }
 
               @Override
               public ResourceLocation getTextureLocation(ShadowDemonEntity entity) {
-                  return TEX;
+                  return TEXTURE;
               }
           }
           EOF
@@ -2190,103 +2158,28 @@ jobs:
           @Mod.EventBusSubscriber(modid = JerryHorrorMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
           public class ClientModEvents {
               @SubscribeEvent
+              public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+                  event.registerLayerDefinition(JerryModel.LAYER_LOCATION, JerryModel::createBodyLayer);
+                  event.registerLayerDefinition(DeadTomModel.LAYER_LOCATION, DeadTomModel::createBodyLayer);
+                  event.registerLayerDefinition(ShadowDemonModel.LAYER_LOCATION, ShadowDemonModel::createBodyLayer);
+              }
+
+              @SubscribeEvent
               public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
                   event.registerEntityRenderer(ModEntities.JERRY.get(), JerryRenderer::new);
                   event.registerEntityRenderer(ModEntities.TOM.get(), TomRenderer::new);
                   event.registerEntityRenderer(ModEntities.DEAD_TOM.get(), DeadTomRenderer::new);
                   event.registerEntityRenderer(ModEntities.SHADOW_DEMON.get(), ShadowDemonRenderer::new);
               }
-
-              @SubscribeEvent
-              public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-                  event.registerLayerDefinition(JerryModel.LAYER_LOCATION, JerryModel::createBodyLayer);
-                  event.registerLayerDefinition(DeadTomModel.LAYER_LOCATION, DeadTomModel::createBodyLayer);
-                  event.registerLayerDefinition(ShadowDemonModel.LAYER_LOCATION, ShadowDemonModel::createBodyLayer);
-              }
           }
           EOF
 
-          cat << 'EOF' > src/main/java/com/jerryhorror/mod/client/ClientHudOverlay.java
-          package com.jerryhorror.mod.client;
+      - name: Compilar Mod (.jar)
+        run: gradle build --no-daemon --stacktrace
 
-          import com.jerryhorror.mod.JerryHorrorMod;
-          import com.jerryhorror.mod.entity.JerryEntity;
-          import net.minecraft.client.Minecraft;
-          import net.minecraft.client.gui.GuiGraphics;
-          import net.minecraftforge.api.distmarker.Dist;
-          import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-          import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-          import net.minecraftforge.eventbus.api.SubscribeEvent;
-          import net.minecraftforge.fml.common.Mod;
-
-          @Mod.EventBusSubscriber(modid = JerryHorrorMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
-          public class ClientHudOverlay {
-              @SubscribeEvent
-              public static void onRenderGui(RenderGuiOverlayEvent.Post event) {
-                  if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
-                  Minecraft mc = Minecraft.getInstance();
-                  if (mc.player == null || mc.level == null) return;
-                  boolean ending = !mc.level.getEntitiesOfClass(JerryEntity.class, mc.player.getBoundingBox().inflate(24.0D),
-                          j -> j.getAnimState() == JerryEntity.ANIM_THE_END).isEmpty();
-                  if (ending) {
-                      GuiGraphics gg = event.getGuiGraphics();
-                      int w = mc.getWindow().getGuiScaledWidth();
-                      int h = mc.getWindow().getGuiScaledHeight();
-                      gg.fill(0, 0, w, h, 0xFF000000);
-                      gg.drawCenteredString(mc.font, "THE END...?", w / 2, h / 2 - 4, 0xAAAAAA);
-                  }
-              }
-          }
-          EOF
-
-      - name: Compilar o Mod (.jar)
-        run: gradle build
-
-      - name: Disponibilizar o .jar para download
+      - name: Enviar .jar para Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: JerryHorrorMod-1.20.1-Forge
-          path: build/libs/jerryhorrormod-1.0.0.jar
-
-🎮 COMO JOGAR TODOS OS ACONTECIMENTOS DO VÍDEO NO MINECRAFT
-
-Depois de colocar o jerryhorrormod-1.0.0.jar na pasta mods do Minecraft 1.20.1
-Forge:
-
-  - Começar a história: Domestique qualquer lobo com osso OU digite /jerry
-    start.
-  - Comandos de voz (digite no chat para aparecer o ícone preto de alto-falante
-    em cima do Jerry):
-      - rolar (ou roll over) — Jerry dá uma cambalhota 360° no chão!
-      - flor / madeira / ferro — Jerry busca flor, madeira e ferro para você!
-      - por que tem sangue — Jerry trava e te encara com os olhos realistas
-        arregalados!
-      - abracar — Tom (coleira azul) abraça o Jerry com corações enquanto Jerry
-        o odeia!
-      - favorito — Jerry rosna de ciúmes quando você elogia o Tom!
-  - Avançar pelas 11 cenas exatas do vídeo: Use /jerry next ou pule direto para
-    qualquer cena com /jerry phase 1 até /jerry phase 11:
-    1.  Fase 1: Jerry amigável obedecendo comandos e fazendo truques.
-    2.  Fase 2: Poças de sangue surgem pela casa + olhos realistas encarando.
-    3.  Fase 3: Jerry te empurra na beira de penhascos/cavernas e esmaga ossos
-        na sua frente.
-    4.  Fase 4: Jerry rouba sua cama, marca território, e quando você tenta
-        dormir você acorda de madrugada vendo ele mexer nos seus baús.
-    5.  Fase 5: Amanhecer — Jerry sentado igual um humano na grama assistindo o
-        sol nascer.
-    6.  Fase 6: Adoção do Tom (coleira azul) e ciúmes do Jerry.
-    7.  Fase 7: Noite do assassinato — porta aberta, Tom morto numa poça de
-        sangue e Jerry fingindo dormir na cama com sangue embaixo. Clique no
-        Jerry (ele faz cara triste falsa) e clique com a pá no Tom para
-        enterrá-lo.
-    8.  Fase 8: Chuva no enterro, ataque de esqueletos e o túmulo do Tom cavado
-        e vazio.
-    9.  Fase 9: Trilha de sangue levando ao Bunker Subterrâneo (escada, grades
-        de ferro, velas e a Sala Vermelha do Ritual com o corpo do Tom no
-        centro).
-    10. Fase 10: A Entidade Sombria aparece na Sala do Ritual e te persegue até
-        o túnel de fuga de ardósia!
-    11. Fase 11 (Final): Você volta para casa e encontra o Jerry deitado na cama
-        sorrindo. Abra um baú (ou vire de costas) e olhe de volta: ele levanta
-        em duas patas na cama te encarando até a tela cortar para THE END...?!
-        (Use /jerry reset para sair da tela final.)
+          name: jerryhorrormod-1.20.1-forge
+          path: build/libs/*.jar
+          if-no-files-found: error
